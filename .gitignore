@@ -1,0 +1,9 @@
+.build/
+build/
+.swiftpm/
+DerivedData/
+*.xcuserstate
+Config/Signing.xcconfig
+*.dmg
+*.app
+.DS_Store
