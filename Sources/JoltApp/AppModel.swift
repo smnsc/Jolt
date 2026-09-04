@@ -130,10 +130,12 @@ final class AppModel: ObservableObject {
     selectedSite = site
     preferences.selectedSite = site
     await client.setSite(site)
+    isSearching = true
     do {
       try await metadata.load(siteID: site.id)
       scheduleSearch(immediate: true)
     } catch {
+      isSearching = false
       errorMessage = error.userFacingMessage
     }
   }
@@ -151,6 +153,7 @@ final class AppModel: ObservableObject {
       selectedSite = nil
       preferences.selectedSite = nil
       issues = []
+      selectedIssueID = nil
       isSeeMoreResultsSelected = false
       displayedJQL = nil
       isIssuePreviewPresented = false
@@ -162,6 +165,7 @@ final class AppModel: ObservableObject {
     searchTask?.cancel()
     isSearching = false
     issues = []
+    selectedIssueID = nil
     isSeeMoreResultsSelected = false
     displayedJQL = nil
     isIssuePreviewPresented = false

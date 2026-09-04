@@ -2,6 +2,26 @@ import AppKit
 import JoltCore
 import SwiftUI
 
+private enum IssueListMetrics {
+  static let outerHorizontalInset: CGFloat = 8
+  static let contentHorizontalPadding: CGFloat = 8
+  static let topPadding: CGFloat = 6
+
+  static var rowInsets: EdgeInsets {
+    EdgeInsets(
+      top: 1,
+      leading: outerHorizontalInset,
+      bottom: 1,
+      trailing: outerHorizontalInset
+    )
+  }
+}
+
+private enum IssueListScrollTarget: Hashable {
+  case issue(String)
+  case seeMoreResults
+}
+
 struct SearchView: View {
   @EnvironmentObject private var model: AppModel
   @EnvironmentObject private var preferences: AppPreferences
@@ -152,46 +172,53 @@ struct SearchView: View {
   }
 
   private var issueList: some View {
-    List {
-      ForEach(model.issues) { issue in
-        IssueRow(
-          issue: issue,
-          isSelected: model.selectedIssueID == issue.id,
-          onSelect: { model.selectIssue(issue.id) },
-          onPreview: {
-            model.selectIssue(issue.id)
-            model.presentIssuePreview()
-          },
-          onOpenInBrowser: {
-            model.selectIssue(issue.id)
-            model.openSelectedIssue()
-          },
-          onPerformAction: { action in
-            model.selectIssue(issue.id)
-            model.performIssueAction(action)
-          }
-        )
-        .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
-        .alignmentGuide(.listRowSeparatorTrailing) { dimensions in dimensions.width }
-        .listRowInsets(EdgeInsets(top: 1, leading: 0, bottom: 1, trailing: 0))
-        .listRowBackground(Color.clear)
-        .background {
-          if issue.id == model.issues.first?.id {
-            CompactListScrollerInstaller()
+    ScrollViewReader { proxy in
+      List {
+        ForEach(model.issues) { issue in
+          IssueRow(
+            issue: issue,
+            isSelected: model.selectedIssueID == issue.id,
+            onSelect: { model.selectIssue(issue.id) },
+            onOpenInBrowser: {
+              model.selectIssue(issue.id)
+              model.openSelectedIssue()
+            },
+            onPerformAction: { action in
+              model.selectIssue(issue.id)
+              model.performIssueAction(action)
+            }
+          )
+          .id(IssueListScrollTarget.issue(issue.id))
+          .listRowInsets(IssueListMetrics.rowInsets)
+          .listRowBackground(Color.clear)
+          .listRowSeparator(.hidden)
+          .background {
+            if issue.id == model.issues.first?.id {
+              CompactListScrollerInstaller()
+            }
           }
         }
-      }
 
-      SeeMoreResultsRow(isSelected: model.isSeeMoreResultsSelected) {
-        model.openCurrentSearchInJira()
+        SeeMoreResultsRow(isSelected: model.isSeeMoreResultsSelected) {
+          model.openCurrentSearchInJira()
+        }
+        .id(IssueListScrollTarget.seeMoreResults)
+        .listRowInsets(IssueListMetrics.rowInsets)
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
       }
-      .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
-      .alignmentGuide(.listRowSeparatorTrailing) { dimensions in dimensions.width }
-      .listRowInsets(EdgeInsets(top: 1, leading: 0, bottom: 1, trailing: 0))
-      .listRowBackground(Color.clear)
+      .listStyle(.plain)
+      .scrollContentBackground(.hidden)
+      .padding(.top, IssueListMetrics.topPadding)
+      .onChange(of: model.selectedIssueID) { _, selectedIssueID in
+        guard let selectedIssueID else { return }
+        proxy.scrollTo(IssueListScrollTarget.issue(selectedIssueID))
+      }
+      .onChange(of: model.isSeeMoreResultsSelected) { _, isSelected in
+        guard isSelected else { return }
+        proxy.scrollTo(IssueListScrollTarget.seeMoreResults)
+      }
     }
-    .listStyle(.inset)
-    .scrollContentBackground(.hidden)
   }
 }
 
@@ -214,7 +241,7 @@ private struct SeeMoreResultsRow: View {
           .foregroundStyle(.secondary)
       }
       .padding(.vertical, 7)
-      .padding(.horizontal, 10)
+      .padding(.horizontal, IssueListMetrics.contentHorizontalPadding)
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
@@ -228,14 +255,6 @@ private struct SeeMoreResultsRow: View {
               lineWidth: 1
             )
         }
-    }
-    .overlay(alignment: .leading) {
-      if isSelected {
-        Capsule()
-          .fill(Color.accentColor)
-          .frame(width: 3, height: 20)
-          .padding(.leading, 4)
-      }
     }
     .onHover { hovering in
       withAnimation(.easeOut(duration: 0.12)) {
@@ -666,6 +685,9 @@ private struct CompactListScrollerInstaller: NSViewRepresentable {
   }
 
   private final class ScrollViewProbe: NSView {
+    private weak var configuredScrollView: NSScrollView?
+    private var installationScheduled = false
+
     override func viewDidMoveToWindow() {
       super.viewDidMoveToWindow()
       installScroller()
@@ -673,19 +695,43 @@ private struct CompactListScrollerInstaller: NSViewRepresentable {
 
     override func viewDidMoveToSuperview() {
       super.viewDidMoveToSuperview()
+      configuredScrollView = nil
+      installScroller()
+    }
+
+    override func layout() {
+      super.layout()
       installScroller()
     }
 
     func installScroller() {
-      DispatchQueue.main.async { [weak self] in
-        guard let scrollView = self?.enclosingScrollView,
-          !(scrollView.verticalScroller is CompactOverlayScroller)
-        else { return }
+      guard !installationScheduled, configuredScrollView !== enclosingScrollView else { return }
+      installationScheduled = true
 
-        let scroller = CompactOverlayScroller()
-        scroller.controlSize = .small
-        scroller.knobStyle = scrollView.verticalScroller?.knobStyle ?? .default
-        scrollView.verticalScroller = scroller
+      DispatchQueue.main.async { [weak self] in
+        guard let self else { return }
+        installationScheduled = false
+        guard let scrollView = enclosingScrollView else { return }
+
+        // Match macOS from the first layout. Forcing the overlay style here could briefly render
+        // its collapsed, hairline-width presentation before AppKit restored the user's preferred
+        // scrollbar style on the next window activation.
+        scrollView.scrollerStyle = NSScroller.preferredScrollerStyle
+        if !(scrollView.verticalScroller is CompactOverlayScroller) {
+          let scroller = CompactOverlayScroller()
+          scroller.controlSize = .small
+          scroller.knobStyle = scrollView.verticalScroller?.knobStyle ?? .default
+          scrollView.verticalScroller = scroller
+        }
+
+        // A freshly installed NSScroller starts with no useful knob proportion. Reflect the
+        // completed list geometry immediately so the first results display does not show the
+        // minimum-size knob until the window next becomes active.
+        scrollView.tile()
+        scrollView.layoutSubtreeIfNeeded()
+        scrollView.reflectScrolledClipView(scrollView.contentView)
+        scrollView.verticalScroller?.needsDisplay = true
+        configuredScrollView = scrollView
       }
     }
   }
@@ -784,58 +830,36 @@ private struct IssueRow: View {
   let issue: JiraIssue
   let isSelected: Bool
   let onSelect: () -> Void
-  let onPreview: () -> Void
   let onOpenInBrowser: () -> Void
   let onPerformAction: (IssueAction) -> Void
   @State private var isHovered = false
 
   var body: some View {
-    ZStack(alignment: .trailing) {
-      Button(action: onSelect) {
-        HStack(spacing: 10) {
-          IssueTypeImage(url: issue.issueType.iconURL)
-            .environmentObject(images)
-          Text(issue.summary)
-            .font(.system(size: 15, weight: .regular))
-            .lineLimit(1)
-          Text("\(issue.key) · \(issue.issueType.name)")
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
-          Spacer(minLength: 12)
-          StatusPill(status: issue.status)
-          Color.clear
-            .frame(width: 26, height: 26)
-        }
-        .padding(.vertical, 7)
-        .padding(.horizontal, 10)
-        .contentShape(Rectangle())
-      }
-      .buttonStyle(.plain)
-      .simultaneousGesture(TapGesture(count: 2).onEnded(onOpenInBrowser))
-
+    Button {
       if isSelected {
-        Button(action: onPreview) {
-          Image(systemName: "chevron.right")
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(.secondary)
-            .frame(width: 26, height: 26)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .help("Preview issue (→)")
-        .accessibilityLabel("Preview \(issue.key)")
-        .padding(.trailing, 10)
+        onOpenInBrowser()
+      } else {
+        onSelect()
       }
+    } label: {
+      HStack(spacing: 10) {
+        IssueTypeImage(url: issue.issueType.iconURL)
+          .environmentObject(images)
+        Text(issue.summary)
+          .font(.system(size: 15, weight: .regular))
+          .lineLimit(1)
+        Text("\(issue.key) · \(issue.issueType.name)")
+          .foregroundStyle(.secondary)
+          .lineLimit(1)
+        Spacer(minLength: 12)
+        StatusPill(status: issue.status)
+      }
+      .padding(.vertical, 7)
+      .padding(.horizontal, IssueListMetrics.contentHorizontalPadding)
+      .contentShape(Rectangle())
     }
+    .buttonStyle(.plain)
     .background { rowBackground }
-    .overlay(alignment: .leading) {
-      if isSelected {
-        Capsule()
-          .fill(Color.accentColor)
-          .frame(width: 3, height: 20)
-          .padding(.leading, 4)
-      }
-    }
     .onHover { hovering in
       withAnimation(.easeOut(duration: 0.12)) {
         isHovered = hovering
