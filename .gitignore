@@ -7,3 +7,4 @@ Config/Signing.xcconfig
 *.dmg
 *.app
 .DS_Store
+*.env
