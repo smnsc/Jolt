@@ -63,25 +63,39 @@ struct SettingsView: View {
         }
 
         settingsSection("Keyboard Shortcut") {
-          SettingsRow(
-            title: "Open Jolt",
-            detail: "Works while Jolt is running and does not require Accessibility permission."
-          ) {
-            ShortcutRecorderButton(shortcut: $preferences.shortcut) { shortcut in
-              do {
-                try HotKeyService.shared.register(shortcut) { AppModel.shared.showSearchWindow() }
-                preferences.shortcut = shortcut
-              } catch {
-                model.errorMessage = error.userFacingMessage
+          VStack(spacing: 0) {
+            SettingsRow(
+              title: "Show or Hide Jolt",
+              detail: "Use Command, Option, or Control with a key, or use F1–F12 by themselves. Shift alone isn’t supported."
+            ) {
+              ShortcutRecorderButton(
+                shortcut: $preferences.shortcut,
+                onValidationError: { model.shortcutErrorMessage = $0 },
+                onReset: {
+                  applyShortcut(.defaultShortcut)
+                }
+              ) { shortcut in
+                applyShortcut(shortcut)
               }
+            }
+
+            if let error = model.shortcutErrorMessage {
+              SettingsDivider()
+              HStack(spacing: 7) {
+                Spacer(minLength: 280)
+                Label(error, systemImage: "exclamationmark.triangle")
+                  .font(.caption)
+                  .foregroundStyle(Color.red.opacity(0.72))
+                  .fixedSize(horizontal: false, vertical: true)
+              }
+              .padding(.horizontal, 18)
+              .padding(.vertical, 9)
             }
           }
         }
 
-        settingsSection("Application") {
+        settingsSection("Mac Behavior") {
           VStack(spacing: 0) {
-            jiraAccountRow
-            SettingsDivider()
             SettingsRow(title: "Show Dock icon") {
               Toggle("Show Dock icon", isOn: $preferences.showDockIcon)
                 .labelsHidden()
@@ -104,11 +118,19 @@ struct SettingsView: View {
               )
               .labelsHidden()
             }
+          }
+        }
+
+        settingsSection("Jira & Data") {
+          VStack(spacing: 0) {
+            jiraAccountRow
             SettingsDivider()
             cachedDataRow
-            SettingsDivider()
-            aboutRow
           }
+        }
+
+        settingsSection("About") {
+          aboutRow
         }
 
         if let error = model.errorMessage {
@@ -159,7 +181,7 @@ struct SettingsView: View {
       if model.isAuthenticated {
         HStack(spacing: 10) {
           Link(destination: AtlassianURLs.apiTokens) {
-            Label("Manage API Key", systemImage: "arrow.up.right")
+            Label("Manage Atlassian API Key", systemImage: "arrow.up.right")
           }
           .buttonStyle(.borderless)
 
@@ -246,6 +268,16 @@ struct SettingsView: View {
 
   private func refreshCachedByteCount() async {
     cachedByteCount = await model.cachedDataByteCount()
+  }
+
+  private func applyShortcut(_ shortcut: KeyboardShortcutSpec) {
+    do {
+      try HotKeyService.shared.register(shortcut) { AppModel.shared.toggleSearchWindow() }
+      preferences.shortcut = shortcut
+      model.shortcutErrorMessage = nil
+    } catch {
+      model.shortcutErrorMessage = error.userFacingMessage
+    }
   }
 }
 
@@ -378,47 +410,67 @@ private struct BackgroundPicker: View {
 
 private struct ShortcutRecorderButton: View {
   @Binding var shortcut: KeyboardShortcutSpec
+  let onValidationError: (String?) -> Void
+  let onReset: () -> Void
   let onCommit: (KeyboardShortcutSpec) -> Void
   @State private var isRecording = false
   @State private var monitor: Any?
 
   var body: some View {
     VStack(alignment: .trailing, spacing: 4) {
-      Button {
-        isRecording ? stopRecording() : startRecording()
-      } label: {
-        Group {
-          if isRecording {
-            HStack(spacing: 7) {
-              Image(systemName: "keyboard")
-              Text("Press shortcut…")
-                .fontWeight(.medium)
-            }
-          } else {
-            HStack(spacing: 4) {
-              ForEach(Array(shortcut.keycapLabels.enumerated()), id: \.offset) { _, label in
-                Text(label)
-                  .font(.system(size: 13, weight: .semibold, design: .rounded))
-                  .frame(minWidth: 25, minHeight: 24)
-                  .padding(.horizontal, 2)
-                  .background(.quaternary, in: RoundedRectangle(cornerRadius: 5))
+      HStack(spacing: 10) {
+        Button {
+          stopRecording()
+          onValidationError(nil)
+          onReset()
+        } label: {
+          Image(systemName: "arrow.counterclockwise")
+            .font(.system(size: 14, weight: .medium))
+            .frame(width: 28, height: 34)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .disabled(shortcut == .defaultShortcut && !isRecording)
+        .help("Reset to the default shortcut, Option-J")
+        .accessibilityLabel("Reset keyboard shortcut to Option-J")
+
+        Button {
+          isRecording ? stopRecording() : startRecording()
+        } label: {
+          Group {
+            if isRecording {
+              HStack(spacing: 7) {
+                Image(systemName: "keyboard")
+                Text("Press shortcut…")
+                  .fontWeight(.medium)
+              }
+            } else {
+              HStack(spacing: 4) {
+                ForEach(Array(shortcut.keycapLabels.enumerated()), id: \.offset) { _, label in
+                  Text(label)
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .frame(minWidth: 25, minHeight: 24)
+                    .padding(.horizontal, 2)
+                    .background(.quaternary, in: RoundedRectangle(cornerRadius: 5))
+                }
               }
             }
           }
+          .frame(minWidth: 142, minHeight: 34)
+          .padding(.horizontal, 8)
+          .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+          .background(
+            isRecording ? Color.accentColor.opacity(0.14) : Color.clear,
+            in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+          )
+          .overlay {
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+              .stroke(isRecording ? Color.accentColor : Color.secondary.opacity(0.3), lineWidth: 2)
+          }
         }
-        .frame(minWidth: 142, minHeight: 34)
-        .padding(.horizontal, 8)
-        .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-        .background(
-          isRecording ? Color.accentColor.opacity(0.14) : Color.clear,
-          in: RoundedRectangle(cornerRadius: 9, style: .continuous)
-        )
-        .overlay {
-          RoundedRectangle(cornerRadius: 9, style: .continuous)
-            .stroke(isRecording ? Color.accentColor : Color.secondary.opacity(0.3), lineWidth: 2)
-        }
+        .buttonStyle(.plain)
       }
-      .buttonStyle(.plain)
 
       Text(isRecording ? "Recording · Esc to cancel" : "Click to change")
         .font(.caption2)
@@ -429,6 +481,7 @@ private struct ShortcutRecorderButton: View {
 
   private func startRecording() {
     isRecording = true
+    onValidationError(nil)
     monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
       if event.keyCode == UInt16(kVK_Escape) {
         stopRecording()
@@ -441,10 +494,19 @@ private struct ShortcutRecorderButton: View {
       if flags.contains(.option) { carbonModifiers |= UInt32(optionKey) }
       if flags.contains(.control) { carbonModifiers |= UInt32(controlKey) }
       if flags.contains(.shift) { carbonModifiers |= UInt32(shiftKey) }
-      guard carbonModifiers != 0,
-        let key = event.charactersIgnoringModifiers?.uppercased(),
-        !key.isEmpty
-      else { return nil }
+
+      let functionKey = KeyboardShortcutSpec.functionKeyName(for: UInt32(event.keyCode))
+      let includesPrimaryModifier =
+        carbonModifiers & (UInt32(cmdKey) | UInt32(optionKey) | UInt32(controlKey)) != 0
+      guard includesPrimaryModifier || (carbonModifiers == 0 && functionKey != nil) else {
+        onValidationError(
+          "Press Command, Option, or Control with a key, or press F1–F12 by itself."
+        )
+        return nil
+      }
+
+      let key = functionKey ?? event.charactersIgnoringModifiers?.uppercased()
+      guard let key, !key.isEmpty else { return nil }
 
       let captured = KeyboardShortcutSpec(
         keyCode: UInt32(event.keyCode),

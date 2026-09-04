@@ -96,6 +96,30 @@ struct KeyboardShortcutSpec: Codable, Equatable {
     if modifiers & UInt32(cmdKey) != 0 { output += "⌘" }
     return output + key.uppercased()
   }
+
+  var isAllowed: Bool {
+    let primaryModifiers = UInt32(cmdKey) | UInt32(optionKey) | UInt32(controlKey)
+    return modifiers & primaryModifiers != 0
+      || (modifiers == 0 && Self.functionKeyName(for: keyCode) != nil)
+  }
+
+  static func functionKeyName(for keyCode: UInt32) -> String? {
+    switch Int(keyCode) {
+    case kVK_F1: return "F1"
+    case kVK_F2: return "F2"
+    case kVK_F3: return "F3"
+    case kVK_F4: return "F4"
+    case kVK_F5: return "F5"
+    case kVK_F6: return "F6"
+    case kVK_F7: return "F7"
+    case kVK_F8: return "F8"
+    case kVK_F9: return "F9"
+    case kVK_F10: return "F10"
+    case kVK_F11: return "F11"
+    case kVK_F12: return "F12"
+    default: return nil
+    }
+  }
 }
 
 @MainActor
@@ -164,7 +188,8 @@ final class AppPreferences: ObservableObject {
     self.showDockIcon = defaults.object(forKey: Key.showDockIcon) as? Bool ?? true
     self.launchAtLogin = defaults.object(forKey: Key.launchAtLogin) as? Bool ?? false
     if let data = defaults.data(forKey: Key.shortcut),
-      let saved = try? JSONDecoder().decode(KeyboardShortcutSpec.self, from: data)
+      let saved = try? JSONDecoder().decode(KeyboardShortcutSpec.self, from: data),
+      saved.isAllowed
     {
       self.shortcut = saved
     } else {

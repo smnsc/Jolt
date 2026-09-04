@@ -7,7 +7,7 @@ Jolt has two Swift Package targets:
 - `JoltCore` owns portable models, the search parser, JQL generation, and credential/cache protocols.
 - `JoltApp` owns macOS UI and integrations: SwiftUI, AppKit, Carbon hot keys, Service Management, Keychain use, disk caching, and Jira HTTP calls.
 
-The executable starts in `JoltApp.swift`. `AppDelegate` applies the Dock policy, registers the global shortcut, and starts the shared `AppModel`. The same model is injected into the search window, menu-bar item, and settings scene.
+The executable starts in `JoltApp.swift`. `AppDelegate` applies the Dock policy, registers the global shortcut, and starts the shared `AppModel`. The shortcut toggles the search window when pressed repeatedly. The same model is injected into the search window, menu-bar item, and settings scene.
 
 ## Runtime flow
 

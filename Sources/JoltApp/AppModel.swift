@@ -26,6 +26,7 @@ final class AppModel: ObservableObject {
   @Published private(set) var sites: [JiraSite] = []
   @Published var selectedSite: JiraSite?
   @Published var errorMessage: String?
+  @Published var shortcutErrorMessage: String?
   @Published var autocompleteContext: AutocompleteContext?
   @Published private(set) var autocompleteSuggestions: [ResolvedShortcut] = []
   @Published var autocompleteSelection = 0
@@ -553,6 +554,15 @@ final class AppModel: ObservableObject {
         window.makeKeyAndOrderFront(nil)
         self.focusPrimaryControl(in: window)
       }
+    }
+  }
+
+  func toggleSearchWindow() {
+    guard let window = resolvedSearchWindow else { return }
+    if window.isVisible {
+      hideSearchWindow()
+    } else {
+      showSearchWindow()
     }
   }
 

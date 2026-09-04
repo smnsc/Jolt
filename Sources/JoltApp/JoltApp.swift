@@ -65,10 +65,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     preferences.applyAppearance()
     do {
       try HotKeyService.shared.register(preferences.shortcut) {
-        AppModel.shared.showSearchWindow()
+        AppModel.shared.toggleSearchWindow()
       }
     } catch {
-      AppModel.shared.errorMessage = error.userFacingMessage
+      AppModel.shared.shortcutErrorMessage = error.userFacingMessage
     }
     AppModel.shared.start()
   }

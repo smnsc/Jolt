@@ -4,7 +4,7 @@ A native, keyboard-first Jira Cloud issue searcher inspired by the Raycast Jira 
 
 ## Highlights
 
-- Global **Option-J** shortcut, Dock and menu-bar access.
+- Global **Option-J** shortcut toggles Jolt like Spotlight, with Dock and menu-bar access.
 - Result actions with **Option-Return**: open in Jira, copy the issue key and title, or copy a rich
   HTML link for pasting into apps such as Microsoft Teams. The footer actions are clickable, and
   right-clicking a result opens the same action menu.
@@ -19,7 +19,7 @@ A native, keyboard-first Jira Cloud issue searcher inspired by the Raycast Jira 
 - Plain-text autocomplete shortcuts, including issue types with spaces such as `#"User Story"`.
 - User-supplied Atlassian API key with secure Keychain storage.
 - Light, dark, and automatic appearance with opaque, tinted, and clear backgrounds.
-- Configurable shortcut, Dock visibility, and Start at Login.
+- Configurable shortcut (including standalone F1–F12 keys), Dock visibility, and Start at Login.
 
 ## Requirements
 
