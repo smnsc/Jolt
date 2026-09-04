@@ -30,6 +30,9 @@ actor CacheManager: CacheManaging {
     self.rootURL = base
     self.imageDirectory = base.appendingPathComponent("IssueTypeImages", isDirectory: true)
     self.metadataURL = base.appendingPathComponent("metadata.json")
+    // Builds that briefly supported Recently Opened stored issue snapshots here. Remove the
+    // obsolete data when upgrading now that the feature no longer exists.
+    try? FileManager.default.removeItem(at: base.appendingPathComponent("recent-issues.json"))
   }
 
   func metadata() -> MetadataSnapshot? {
@@ -98,6 +101,7 @@ actor CacheManager: CacheManaging {
     let name = hash.map { String(format: "%02x", $0) }.joined()
     return imageDirectory.appendingPathComponent(name)
   }
+
 }
 
 @MainActor
