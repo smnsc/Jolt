@@ -4,6 +4,7 @@ import JoltCore
 protocol JiraServing: AnyObject {
   func setSite(_ site: JiraSite) async
   func search(jql: String, maxResults: Int) async throws -> [JiraIssue]
+  func issueDescription(issueID: String) async throws -> JiraDescription?
   func projects() async throws -> [JiraProject]
   func issueTypes() async throws -> [JiraIssueType]
   func suggestions(field: String, value: String) async throws -> [JiraAutocompleteSuggestion]
@@ -28,12 +29,24 @@ actor JiraClient: JiraServing {
     let body: [String: Any] = [
       "jql": jql,
       "maxResults": maxResults,
-      "fields": ["summary", "description", "project", "issuetype", "status"],
+      "fields": ["summary", "project", "issuetype", "status"],
     ]
     let data = try JSONSerialization.data(withJSONObject: body)
     let responseData = try await request(path: "/rest/api/3/search/jql", method: "POST", body: data)
     let response = try JSONDecoder().decode(SearchResponse.self, from: responseData)
     return response.issues.map(\.model)
+  }
+
+  func issueDescription(issueID: String) async throws -> JiraDescription? {
+    let pathCharacters = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_"))
+    guard let encodedIssueID = issueID.addingPercentEncoding(withAllowedCharacters: pathCharacters)
+    else { throw AppError.invalidResponse }
+    let data = try await request(
+      path: "/rest/api/3/issue/\(encodedIssueID)",
+      query: [.init(name: "fields", value: "description")]
+    )
+    let response = try JSONDecoder().decode(IssueDescriptionResponse.self, from: data)
+    return response.fields.description
   }
 
   func projects() async throws -> [JiraProject] {
@@ -153,7 +166,6 @@ private struct IssueDTO: Decodable {
 
   struct Fields: Decodable {
     let summary: String
-    let description: JiraDescriptionDTO?
     let project: JiraProject
     let issuetype: JiraIssueType
     let status: StatusDTO
@@ -173,7 +185,6 @@ private struct IssueDTO: Decodable {
       id: id,
       key: key,
       summary: fields.summary,
-      description: fields.description?.plainText,
       project: fields.project,
       issueType: fields.issuetype,
       status: .init(name: fields.status.name, category: fields.status.statusCategory.key)
@@ -181,77 +192,11 @@ private struct IssueDTO: Decodable {
   }
 }
 
-private struct JiraDescriptionDTO: Decodable {
-  let type: String
-  let text: String?
-  let content: [JiraDescriptionDTO]?
-  let attrs: Attributes?
+private struct IssueDescriptionResponse: Decodable {
+  let fields: Fields
 
-  struct Attributes: Decodable {
-    let text: String?
-    let shortName: String?
-    let url: String?
-  }
-
-  init(from decoder: Decoder) throws {
-    if let plainText = try? decoder.singleValueContainer().decode(String.self) {
-      type = "text"
-      text = plainText
-      content = nil
-      attrs = nil
-      return
-    }
-
-    let container = try decoder.container(keyedBy: CodingKeys.self)
-    type = try container.decode(String.self, forKey: .type)
-    text = try container.decodeIfPresent(String.self, forKey: .text)
-    content = try container.decodeIfPresent([JiraDescriptionDTO].self, forKey: .content)
-    attrs = try container.decodeIfPresent(Attributes.self, forKey: .attrs)
-  }
-
-  var plainText: String {
-    renderedText.trimmingCharacters(in: .whitespacesAndNewlines)
-  }
-
-  private var renderedText: String {
-    switch type {
-    case "text":
-      return text ?? ""
-    case "hardBreak":
-      return "\n"
-    case "mention":
-      return attrs?.text ?? ""
-    case "emoji":
-      return attrs?.text ?? attrs?.shortName ?? ""
-    case "inlineCard":
-      return attrs?.url ?? ""
-    case "paragraph", "heading", "blockquote", "codeBlock":
-      return renderedChildren + "\n\n"
-    case "listItem":
-      return renderedChildren.trimmingCharacters(in: .newlines) + "\n"
-    case "bulletList":
-      return listText(prefix: { _ in "• " }) + "\n"
-    case "orderedList":
-      return listText(prefix: { "\($0 + 1). " }) + "\n"
-    case "rule":
-      return "────────\n\n"
-    default:
-      return renderedChildren
-    }
-  }
-
-  private var renderedChildren: String {
-    content?.map(\.renderedText).joined() ?? ""
-  }
-
-  private func listText(prefix: (Int) -> String) -> String {
-    (content ?? []).enumerated().map { index, child in
-      prefix(index) + child.renderedText.trimmingCharacters(in: .whitespacesAndNewlines)
-    }.joined(separator: "\n")
-  }
-
-  private enum CodingKeys: String, CodingKey {
-    case type, text, content, attrs
+  struct Fields: Decodable {
+    let description: JiraDescription?
   }
 }
 

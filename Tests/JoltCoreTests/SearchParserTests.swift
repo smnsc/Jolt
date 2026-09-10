@@ -4,6 +4,27 @@ import Testing
 @testable import JoltCore
 
 @Suite struct SearchParserTests {
+  @Test func reporterShortcutsRequireResolutionAndPreventDirectLookup() {
+    let parsed = SearchQueryParser().parse(#"dev-42 >me >"Jane Smith""#)
+    #expect(parsed.directIssueKey == nil)
+    #expect(parsed.plainTerms == ["dev-42"])
+    #expect(parsed.reporters.isEmpty)
+    #expect(parsed.unresolvedShortcuts == [
+      .init(kind: .reporter, value: "me", sourceText: ">me"),
+      .init(kind: .reporter, value: "Jane Smith", sourceText: #">"Jane Smith""#),
+    ])
+    #expect(SearchQueryParser().parse(">").plainTerms.isEmpty)
+  }
+
+  @Test func reporterCompletionRoundTripsQuotedNames() {
+    let shortcut = ResolvedShortcut(
+      kind: .reporter, displayName: #"Jane "JJ" Smith"#, canonicalValue: "account-1")
+    let parsed = SearchQueryParser().parse(shortcut.insertionText)
+    #expect(parsed.unresolvedShortcuts.first?.kind == .reporter)
+    #expect(parsed.unresolvedShortcuts.first?.value == shortcut.displayName)
+    #expect(shortcut.insertionText(preserving: "jane").hasPrefix(">\"jane"))
+  }
+
   @Test func portableQuotedShortcutIsUnresolvedUntilMetadataResolution() {
     let parsed = SearchQueryParser().parse(#"pdf #"user story""#)
 
@@ -43,6 +64,22 @@ import Testing
     #expect(shortcut.insertionText == #"#"User Story""#)
   }
 
+  @Test func completionPreservesTypedCasing() {
+    let project = ResolvedShortcut(
+      kind: .project, displayName: "RE", canonicalValue: "100", detail: "Rhino Entertainment")
+    #expect(project.insertionText(preserving: "re") == "@re")
+    #expect(project.insertionText(preserving: "rE") == "@rE")
+    #expect(project.insertionText(preserving: "r") == "@rE")
+    #expect(project.insertionText(preserving: "") == "@RE")
+    #expect(project.insertionText(preserving: "entertain") == "@RE")
+    #expect(project.insertionText(preserving: "rhino entertainment") == #"@"rhino entertainment""#)
+    #expect(project.canonicalValue == "100")
+
+    let type = ResolvedShortcut(kind: .issueType, displayName: "User Story", canonicalValue: "101")
+    #expect(type.insertionText(preserving: "user story") == #"#"user story""#)
+    #expect(type.insertionText(preserving: "user") == #"#"user Story""#)
+  }
+
   @Test func scopeEditorAddsPortableQueryShortcuts() {
     let editor = SearchQueryScopeEditor()
 
@@ -75,9 +112,9 @@ import Testing
 
   @Test func scopeEditorClearsOnlyProjectAndIssueTypeShortcuts() {
     let editor = SearchQueryScopeEditor()
-    let input = #"pdf @SI #"User Story" ~me export"#
+    let input = #"pdf @SI #"User Story" ~me >me export"#
 
-    #expect(editor.clearingProjectAndIssueTypeScopes(from: input) == "pdf ~me export ")
+    #expect(editor.clearingProjectAndIssueTypeScopes(from: input) == "pdf ~me >me export ")
   }
 
   @Test func scopeEditorCommitsNewAndRemovedScopesWithSpace() {

@@ -3,6 +3,26 @@ import Testing
 @testable import JoltCore
 
 @Suite struct JQLBuilderTests {
+  @Test func reportersCombineWithOtherCategoriesAndDeduplicate() throws {
+    let jane = ResolvedShortcut(kind: .reporter, displayName: "Jane", canonicalValue: "account-1")
+    let parsed = ParsedSearch(
+      plainTerms: ["export"],
+      projects: [.init(kind: .project, displayName: "DEV", canonicalValue: "10")],
+      issueTypes: [.init(kind: .issueType, displayName: "Bug", canonicalValue: "20")],
+      assignees: [.init(kind: .assignee, displayName: "Me", canonicalValue: "currentUser()")],
+      reporters: [jane, .init(kind: .reporter, displayName: "Me", canonicalValue: "currentUser()"), jane]
+    )
+    #expect(try JQLBuilder().build(parsed: parsed)
+      == #"project IN ("10") AND issuetype IN ("20") AND assignee IN (currentUser()) AND reporter IN ("account-1", currentUser()) AND text ~ "export*" ORDER BY lastViewed DESC"#)
+  }
+
+  @Test func unresolvedReporterCannotReachJira() {
+    let parsed = SearchQueryParser().parse(">unknown")
+    #expect(throws: JQLBuilderError.unresolvedShortcuts(parsed.unresolvedShortcuts)) {
+      try JQLBuilder().build(parsed: parsed)
+    }
+  }
+
   @Test func raycastExampleUsesOrWithinCategoriesAndAndBetweenTerms() throws {
     let parsed = ParsedSearch(
       plainTerms: ["pdf", "export"],

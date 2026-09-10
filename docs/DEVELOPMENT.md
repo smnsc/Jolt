@@ -4,7 +4,7 @@
 
 - macOS 14 or later.
 - Swift 6 toolchain compatible with the package's Swift 5 language mode.
-- Full Xcode 16 or later for running the app, asset compilation, universal release builds, signing, and notarization.
+- Full Xcode 26 or later for Icon Composer asset compilation, universal release builds, signing, and notarization (verified with Xcode 26.6).
 - A Jira Cloud account and user-supplied API token for live integration testing.
 
 No developer-owned Jira credentials belong in the repository. The app collects credentials at runtime and stores them in macOS Keychain.
@@ -29,7 +29,9 @@ swift test --disable-sandbox --scratch-path "$PWD/build/TestSwiftPM"
 Open `Package.swift` in Xcode and run the `Jolt` scheme for application behavior. Useful manual checks after app-layer changes are:
 
 1. Connect with a valid `*.atlassian.net` site, email, and API token.
-2. Verify empty search, plain text, each shortcut kind, combined shortcuts, and direct issue keys.
+2. Verify empty search, plain text, all four shortcuts (`@project`, `#type`, `~assignee`,
+   `>reporter`), combined shortcuts, and direct issue keys. Check `>me`, a quoted reporter name,
+   multiple reporters, and reporter autocomplete; unknown or ambiguous reporters must block search.
 3. Exercise keyboard suggestion selection, copy/paste, Escape, result navigation, and Return-to-open.
 4. Hide and reopen the search window with the global shortcut and menu-bar item.
 5. Check clear-cache versus logout semantics.
@@ -69,11 +71,16 @@ If `APPLE_ID`, `APPLE_TEAM_ID`, and `APPLE_APP_PASSWORD` are all present, the pa
 
 ## Icons and resources
 
-- Source artwork: `Resources/AppIcon.png`.
-- Generate icon sizes: `swift scripts/generate-app-icon.swift`.
+- Modern app icon: `Resources/AppIcon.icon`; edit and save in Icon Composer.
+- Legacy app icon source artwork: `Resources/AppIcon.png`.
+- Menu-bar source artwork: `Resources/MenuBarIcon.png`.
+- Regenerate legacy icon sizes: `swift scripts/generate-app-icon.swift Resources/AppIcon.png Resources/Assets.xcassets/AppIcon.appiconset`.
+- `scripts/build-app.sh` regenerates these legacy sizes automatically from `Resources/AppIcon.png` before every build.
 - Asset catalog: `Resources/Assets.xcassets`.
 - Bundle template: `Resources/Info.plist`.
 - Sandbox permissions: `Resources/Jolt.entitlements`.
+
+The build compiles the `.icon` document and asset catalog together, producing `Assets.car` and `AppIcon.icns`, and merges the compiler's icon metadata into the app's Info.plist. Keep the catalog's `AppIcon.appiconset` for macOS 14/15 and `MenuBarIcon.imageset` for the menu bar. `Resources/AppIcon.iconset` is a standalone legacy export and is not read by the build script.
 
 The app sandbox currently allows client and server networking. Review entitlements deliberately when adding platform capabilities.
 

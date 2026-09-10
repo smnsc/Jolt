@@ -1,0 +1,45 @@
+{
+  "fill" : {
+    "linear-gradient" : [
+      "display-p3:0.18824,0.44314,0.89804,1.00000",
+      "srgb:0.07843,0.14510,0.35686,1.00000"
+    ]
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "image-name" : "Oval.png",
+          "name" : "Oval",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              274,
+              232
+            ]
+          }
+        },
+        {
+          "glass" : true,
+          "hidden" : false,
+          "image-name" : "Codex Image 4 Sept 2026, 13_51_19.png",
+          "name" : "Codex Image 4 Sept 2026, 13_51_19"
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.3
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}

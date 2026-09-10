@@ -107,6 +107,7 @@ actor CacheManager: CacheManaging {
 @MainActor
 final class ImageRepository: ObservableObject {
   private let memory = NSCache<NSURL, NSImage>()
+  private var inFlight: [NSURL: Task<NSImage?, Never>] = [:]
   private let client: JiraServing
   private let cache: CacheManager
 
@@ -116,20 +117,32 @@ final class ImageRepository: ObservableObject {
   }
 
   func image(for url: URL) async -> NSImage? {
-    if let image = memory.object(forKey: url as NSURL) { return image }
-    if let data = await cache.imageData(for: url), let image = NSImage(data: data) {
-      memory.setObject(image, forKey: url as NSURL)
-      return image
+    let key = url as NSURL
+    if let image = memory.object(forKey: key) { return image }
+    if let task = inFlight[key] { return await task.value }
+
+    let task: Task<NSImage?, Never> = Task { [client, cache] in
+      let data: Data
+      if let cached = await cache.imageData(for: url) {
+        data = cached
+      } else {
+        guard let downloaded = try? await client.data(from: url) else { return nil }
+        data = downloaded
+        try? await cache.save(imageData: downloaded, for: url)
+      }
+      guard !Task.isCancelled else { return nil }
+      return await Task.detached(priority: .utility) { NSImage(data: data) }.value
     }
-    guard let data = try? await client.data(from: url), let image = NSImage(data: data) else {
-      return nil
-    }
-    memory.setObject(image, forKey: url as NSURL)
-    try? await cache.save(imageData: data, for: url)
+    inFlight[key] = task
+    let image = await task.value
+    inFlight[key] = nil
+    if let image { memory.setObject(image, forKey: key) }
     return image
   }
 
   func clearMemory() {
+    inFlight.values.forEach { $0.cancel() }
+    inFlight = [:]
     memory.removeAllObjects()
   }
 }

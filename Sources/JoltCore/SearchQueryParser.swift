@@ -22,6 +22,7 @@ public struct SearchQueryParser: Sendable {
     if result.projects.isEmpty,
       result.issueTypes.isEmpty,
       result.assignees.isEmpty,
+      result.reporters.isEmpty,
       result.unresolvedShortcuts.isEmpty,
       result.plainTerms.count == 1,
       isIssueKey(result.plainTerms[0])
@@ -105,7 +106,7 @@ public struct SearchQueryParser: Sendable {
     let separators = CharacterSet(charactersIn: "-+!*&|(){}[]^~?:\\/\"")
     return term.components(separatedBy: separators)
       .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-      .filter { !$0.isEmpty && $0 != "@" && $0 != "#" && $0 != "~" }
+      .filter { !$0.isEmpty && $0 != "@" && $0 != "#" && $0 != "~" && $0 != ">" }
   }
 
   private func isIssueKey(_ value: String) -> Bool {

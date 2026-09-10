@@ -6,7 +6,7 @@ actor JiraMetadataStore {
   private let cache: CacheManager
   private var projects: [JiraProject] = []
   private var issueTypes: [JiraIssueType] = []
-  private var assigneeSuggestions: [String: [ResolvedShortcut]] = [:]
+  private var userSuggestions: [String: [ResolvedShortcut]] = [:]
   private var currentSiteID: String?
 
   init(client: JiraServing, cache: CacheManager = .shared) {
@@ -18,28 +18,35 @@ actor JiraMetadataStore {
     if currentSiteID != siteID {
       projects = []
       issueTypes = []
-      assigneeSuggestions = [:]
+      userSuggestions = [:]
       currentSiteID = siteID
     }
-    if !force, let snapshot = await cache.metadata(), snapshot.siteID == siteID,
-      snapshot.isFresh
-    {
+    let cachedSnapshot = !force ? await cache.metadata() : nil
+    let matchingSnapshot = cachedSnapshot?.siteID == siteID ? cachedSnapshot : nil
+    if let snapshot = matchingSnapshot {
       projects = snapshot.projects
       issueTypes = snapshot.issueTypes
-      return
+      if snapshot.isFresh { return }
     }
-    async let fetchedProjects = client.projects()
-    async let fetchedIssueTypes = client.issueTypes()
-    let (projects, issueTypes) = try await (fetchedProjects, fetchedIssueTypes)
-    let snapshot = MetadataSnapshot(
-      siteID: siteID,
-      projects: projects,
-      issueTypes: issueTypes,
-      fetchedAt: Date()
-    )
-    self.projects = snapshot.projects
-    self.issueTypes = snapshot.issueTypes
-    try await cache.save(metadata: snapshot)
+    do {
+      async let fetchedProjects = client.projects()
+      async let fetchedIssueTypes = client.issueTypes()
+      let (projects, issueTypes) = try await (fetchedProjects, fetchedIssueTypes)
+      let snapshot = MetadataSnapshot(
+        siteID: siteID,
+        projects: projects,
+        issueTypes: issueTypes,
+        fetchedAt: Date()
+      )
+      self.projects = snapshot.projects
+      self.issueTypes = snapshot.issueTypes
+      try await cache.save(metadata: snapshot)
+    } catch {
+      // Stale metadata is still safe for known shortcuts. Keep it available if Jira cannot refresh
+      // it so a temporary metadata failure does not block otherwise valid searches.
+      if matchingSnapshot != nil { return }
+      throw error
+    }
   }
 
   func suggestions(kind: SearchShortcutKind, query: String) async throws -> [ResolvedShortcut] {
@@ -47,14 +54,10 @@ actor JiraMetadataStore {
     switch kind {
     case .project:
       return
-        projects
-        .filter {
-          needle.isEmpty || $0.key.localizedCaseInsensitiveContains(needle)
-            || $0.name.localizedCaseInsensitiveContains(needle)
-        }
+        ProjectAutocomplete.matches(in: projects, query: needle)
         .prefix(12)
         .map {
-          .init(kind: .project, displayName: $0.key, canonicalValue: $0.id)
+          .init(kind: .project, displayName: $0.key, canonicalValue: $0.id, detail: $0.name)
         }
     case .issueType:
       return
@@ -62,19 +65,22 @@ actor JiraMetadataStore {
         .filter { needle.isEmpty || $0.name.localizedCaseInsensitiveContains(needle) }
         .prefix(12)
         .map { .init(kind: .issueType, displayName: $0.name, canonicalValue: $0.id) }
-    case .assignee:
+    case .assignee, .reporter:
       if needle.caseInsensitiveCompare("me") == .orderedSame {
         return [
-          .init(kind: .assignee, displayName: "Me", canonicalValue: "currentUser()")
+          .init(kind: kind, displayName: "Me", canonicalValue: "currentUser()")
         ]
       }
-      let cacheKey = needle.lowercased()
-      if let cached = assigneeSuggestions[cacheKey] { return cached }
-      let remote = try await client.suggestions(field: "assignee", value: needle)
+      let cacheKey = kind.rawValue + ":" + needle.lowercased()
+      if let cached = userSuggestions[cacheKey] { return cached }
+      let siteID = currentSiteID
+      let remote = try await client.suggestions(field: kind.rawValue, value: needle)
       let suggestions = remote.prefix(12).map {
-        ResolvedShortcut(kind: .assignee, displayName: $0.displayName, canonicalValue: $0.value)
+        ResolvedShortcut(kind: kind, displayName: $0.displayName, canonicalValue: $0.value)
       }
-      assigneeSuggestions[cacheKey] = suggestions
+      try Task.checkCancellation()
+      guard currentSiteID == siteID else { throw CancellationError() }
+      userSuggestions[cacheKey] = suggestions
       return suggestions
     }
   }
@@ -100,7 +106,7 @@ actor JiraMetadataStore {
       exact = uniqueValues(matches).map {
         .init(kind: .issueType, displayName: $0.name, canonicalValue: $0.id)
       }
-    case .assignee:
+    case .assignee, .reporter:
       exact = try await suggestions(kind: kind, query: value).filter {
         $0.displayName.caseInsensitiveCompare(value) == .orderedSame
           || $0.canonicalValue.caseInsensitiveCompare(value) == .orderedSame
@@ -112,7 +118,7 @@ actor JiraMetadataStore {
       // Jira can define several project-scoped Issue Types with the same display name. A typed
       // name intentionally resolves to every matching canonical ID so #Epic works across them.
       return unique
-    case .project, .assignee:
+    case .project, .assignee, .reporter:
       return unique.count == 1 ? unique : []
     }
   }
@@ -120,7 +126,7 @@ actor JiraMetadataStore {
   func clearMemory() {
     projects = []
     issueTypes = []
-    assigneeSuggestions = [:]
+    userSuggestions = [:]
     currentSiteID = nil
   }
 

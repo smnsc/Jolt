@@ -28,7 +28,7 @@ Jolt is a native, read-only Jira Cloud issue searcher for macOS. It is a Swift P
 - Keep Jira access read-only. Do not add issue mutation endpoints without an explicit product decision.
 - Never log, persist in `UserDefaults`, or place in fixtures an email address, API token, or Authorization header. Credentials belong in macOS Keychain through `CredentialStoring`.
 - Preserve actor boundaries. `AppModel` and UI-facing repositories are main-actor isolated; authentication, Jira networking, metadata, and disk cache services are actors.
-- Keep the editor input as one plain string. Raw `@`, `#`, and `~` shortcuts must resolve against Jira metadata before JQL reaches the network, without becoming styled editor objects.
+- Keep the editor input as one plain string. Raw `@` (project), `#` (issue type), `~` (assignee), and `>` (reporter) shortcuts must resolve against Jira metadata before JQL reaches the network, without becoming styled editor objects.
 - Keep `JoltCore` free of SwiftUI and app lifecycle concerns. Put deterministic parser/JQL behavior there and cover it with tests.
 - Cancel or supersede stale asynchronous searches and autocomplete requests when input, site, or connection state changes.
 - Keep this guide and the files in `docs/` short and current when changing the behaviors they describe.

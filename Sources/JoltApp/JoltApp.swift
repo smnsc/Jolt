@@ -28,7 +28,7 @@ struct JoltApp: App {
     .windowResizability(.contentMinSize)
     .windowStyle(.hiddenTitleBar)
 
-    MenuBarExtra("Jolt", systemImage: "magnifyingglass") {
+    MenuBarExtra("Jolt", image: "MenuBarIcon") {
       Button("Search Issues") { model.showSearchWindow() }
       Button("Reset Size and Center") { model.centerSearchWindow() }
       SettingsMenuButton()
@@ -75,6 +75,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
     false
+  }
+
+  func applicationDidBecomeActive(_ notification: Notification) {
+    AppModel.shared.applicationDidBecomeActive()
+  }
+
+  func applicationDidResignActive(_ notification: Notification) {
+    AppModel.shared.applicationDidResignActive()
   }
 
   func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool

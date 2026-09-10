@@ -71,12 +71,6 @@ struct SearchView: View {
       }
     }
     .animation(.easeOut(duration: 0.14), value: model.isActionsMenuPresented)
-    .background {
-      if model.isIssuePreviewPresented {
-        IssuePreviewKeyboardHandler()
-          .environmentObject(model)
-      }
-    }
   }
 
   private var header: some View {
@@ -117,7 +111,12 @@ struct SearchView: View {
   @ViewBuilder
   private var content: some View {
     if model.isIssuePreviewPresented, let issue = model.selectedIssue {
-      IssuePreview(issue: issue)
+      IssuePreview(
+        issue: issue,
+        description: model.issuePreviewDescription,
+        isLoading: model.isIssuePreviewLoading,
+        errorMessage: model.issuePreviewErrorMessage
+      )
     } else if !model.isAuthenticated {
       signInView
     } else if model.sites.count > 1 && model.selectedSite == nil {
@@ -493,15 +492,19 @@ private struct SearchFooter: View {
 
   private var footerContent: some View {
     HStack {
-      if let site = model.selectedSite {
-        Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-        Text(site.name).foregroundStyle(.secondary)
-      } else {
-        Text("Jolt").foregroundStyle(.secondary)
-      }
       if let error = model.errorMessage, !model.issues.isEmpty {
-        Text("•").foregroundStyle(.tertiary)
-        Text(error).foregroundStyle(.red).lineLimit(1)
+        Label(error, systemImage: "exclamationmark.circle")
+          .foregroundStyle(.red)
+          .lineLimit(1)
+          .help(error)
+      } else {
+        Image("MenuBarIcon")
+          .renderingMode(.template)
+          .resizable()
+          .scaledToFit()
+          .frame(width: 18, height: 18)
+          .foregroundStyle(.secondary)
+          .accessibilityHidden(true)
       }
       Spacer()
       if model.selectedIssue != nil {
@@ -902,6 +905,9 @@ private struct IssueRow: View {
 
 private struct IssuePreview: View {
   let issue: JiraIssue
+  let description: JiraDescription?
+  let isLoading: Bool
+  let errorMessage: String?
 
   var body: some View {
     ScrollView {
@@ -912,10 +918,18 @@ private struct IssuePreview: View {
 
         Divider()
 
-        if let description = issue.description, !description.isEmpty {
-          Text(description)
-            .font(.system(size: 15))
-            .lineSpacing(5)
+        if isLoading {
+          ProgressView("Loading description…")
+            .frame(maxWidth: .infinity, minHeight: 220)
+        } else if let errorMessage {
+          ContentUnavailableView(
+            "Couldn’t Load Description",
+            systemImage: "exclamationmark.triangle",
+            description: Text(errorMessage)
+          )
+          .frame(maxWidth: .infinity, minHeight: 220)
+        } else if let description, !description.isEmpty {
+          IssueDescriptionView(node: description)
             .textSelection(.enabled)
         } else {
           ContentUnavailableView(
@@ -929,6 +943,7 @@ private struct IssuePreview: View {
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.horizontal, 28)
       .padding(.vertical, 24)
+      .background { IssuePreviewKeyboardHandler() }
     }
   }
 }
@@ -941,8 +956,10 @@ private struct IssuePreviewKeyboardHandler: NSViewRepresentable {
   }
 
   func makeNSView(context: Context) -> NSView {
+    let view = NSView(frame: .zero)
+    context.coordinator.view = view
     context.coordinator.installMonitor()
-    return NSView(frame: .zero)
+    return view
   }
 
   func updateNSView(_ nsView: NSView, context: Context) {
@@ -957,6 +974,7 @@ private struct IssuePreviewKeyboardHandler: NSViewRepresentable {
   final class Coordinator {
     var model: AppModel
     private var monitor: Any?
+    weak var view: NSView?
 
     init(model: AppModel) {
       self.model = model
@@ -965,7 +983,9 @@ private struct IssuePreviewKeyboardHandler: NSViewRepresentable {
     func installMonitor() {
       guard monitor == nil else { return }
       monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-        guard let self, model.isIssuePreviewPresented else { return event }
+        guard let self, model.isIssuePreviewPresented,
+              let window = view?.window, window.isKeyWindow,
+              event.window === window else { return event }
 
         if model.isActionsMenuPresented {
           switch event.keyCode {
@@ -987,6 +1007,16 @@ private struct IssuePreviewKeyboardHandler: NSViewRepresentable {
         }
 
         switch event.keyCode {
+        case let key where [125, 126].contains(key) && event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty:
+          guard let scrollView = view?.enclosingScrollView,
+                let document = scrollView.documentView else { return event }
+          let clipView = scrollView.contentView
+          var bounds = clipView.bounds
+          let direction: CGFloat = event.keyCode == 125 ? 1 : -1
+          bounds.origin.y += direction * (document.isFlipped ? 1 : -1) * 40
+          clipView.scroll(to: clipView.constrainBoundsRect(bounds).origin)
+          scrollView.reflectScrolledClipView(clipView)
+          return nil
         case 123, 51, 53:
           model.dismissIssuePreview()
           return nil

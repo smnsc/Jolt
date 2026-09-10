@@ -50,6 +50,9 @@ cd "${project_dir}"
 mkdir -p "${scratch_path}" "${module_cache_path}"
 export SWIFTPM_MODULECACHE_OVERRIDE="${module_cache_path}"
 export CLANG_MODULE_CACHE_PATH="${module_cache_path}"
+swift "${script_dir}/generate-app-icon.swift" \
+  "${project_dir}/Resources/AppIcon.png" \
+  "${project_dir}/Resources/Assets.xcassets/AppIcon.appiconset"
 swift build --disable-sandbox --scratch-path "${scratch_path}" \
   -c "${configuration}" --arch arm64 --arch x86_64
 binary_dir="$(swift build --disable-sandbox --scratch-path "${scratch_path}" \
@@ -59,7 +62,9 @@ mkdir -p "${contents_dir}/MacOS" "${contents_dir}/Resources"
 cp "${binary_dir}/Jolt" "${contents_dir}/MacOS/Jolt"
 cp "${project_dir}/Resources/Info.plist" "${plist_path}"
 
+# Compile the layered icon alongside the catalog's legacy fallback and menu icon.
 xcrun actool "${project_dir}/Resources/Assets.xcassets" \
+  "${project_dir}/Resources/AppIcon.icon" \
   --compile "${contents_dir}/Resources" \
   --platform macosx \
   --minimum-deployment-target 14.0 \
@@ -67,6 +72,8 @@ xcrun actool "${project_dir}/Resources/Assets.xcassets" \
   --output-partial-info-plist "${asset_info_path}" \
   --target-device mac \
   --development-region en >/dev/null
+
+/usr/libexec/PlistBuddy -c "Merge ${asset_info_path}" "${plist_path}"
 
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier ${BUNDLE_IDENTIFIER:-com.local.Jolt}" "${plist_path}"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${MARKETING_VERSION:-0.1.0}" "${plist_path}"

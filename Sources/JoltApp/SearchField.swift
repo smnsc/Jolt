@@ -143,6 +143,7 @@ struct PlainSearchTextEditor: NSViewRepresentable {
   @Binding var text: String
   let completionRequest: SearchCompletionRequest?
   let onTextChange: (String) -> Void
+  let onCompletion: (String) -> Void
   let onContextChange: (AutocompleteContext?) -> Void
   let onCommand: (SearchEditorCommand) -> Bool
 
@@ -273,6 +274,7 @@ struct PlainSearchTextEditor: NSViewRepresentable {
       textView.window?.makeFirstResponder(textView)
       self.activeRange = nil
       parent.onContextChange(nil)
+      parent.onCompletion(textView.string)
     }
 
     private func enforcePlainTextAppearance(in textView: NSTextView) {
@@ -293,7 +295,7 @@ struct PlainSearchTextEditor: NSViewRepresentable {
       let caret = textView.selectedRange().location
       guard caret <= (textView.string as NSString).length else { return }
       let beforeCaret = (textView.string as NSString).substring(to: caret)
-      let pattern = #"(?<!\S)([@#~])(?:\"([^\"]*)|([^\s]*))$"#
+      let pattern = #"(?<!\S)([@#~>])(?:\"([^\"]*)|([^\s]*))$"#
       guard let expression = try? NSRegularExpression(pattern: pattern),
         let match = expression.firstMatch(
           in: beforeCaret, range: NSRange(location: 0, length: (beforeCaret as NSString).length)),
@@ -324,6 +326,7 @@ struct SearchField: View {
       text: $text,
       completionRequest: completionRequest,
       onTextChange: model.inputDidChange,
+      onCompletion: model.inputDidCompleteShortcut,
       onContextChange: model.updateAutocomplete,
       onCommand: handleCommand
     )
@@ -347,7 +350,7 @@ struct SearchField: View {
           height: SearchFieldMetrics.leadingIconWidth
         )
         if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-          Text("Search issues by text, @project, #type, ~assignee…")
+          Text("Search issues by text, @project, #type, ~assignee, >reporter…")
             .font(.system(size: 17))
             .foregroundStyle(.tertiary)
             .offset(y: SearchFieldMetrics.placeholderVerticalOffset)
@@ -382,12 +385,18 @@ struct SearchField: View {
       ForEach(Array(model.autocompleteSuggestions.prefix(8).enumerated()), id: \.element.id) {
         index, suggestion in
         Button {
-          completionRequest = .init(text: suggestion.insertionText, appendSpace: true)
+          completionRequest = .init(text: suggestion.insertionText(preserving: model.autocompleteContext?.query ?? ""), appendSpace: true)
         } label: {
           HStack {
             Text(String(suggestion.kind.prefix))
               .foregroundStyle(.secondary)
             Text(suggestion.displayName)
+            if let detail = suggestion.detail {
+              Text(detail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            }
             Spacer()
           }
           .padding(.horizontal, 10)
@@ -445,7 +454,8 @@ struct SearchField: View {
     case .commitSuggestion where hasAutocomplete:
       let index = min(model.autocompleteSelection, model.autocompleteSuggestions.count - 1)
       completionRequest = .init(
-        text: model.autocompleteSuggestions[index].insertionText,
+        text: model.autocompleteSuggestions[index].insertionText(
+          preserving: model.autocompleteContext?.query ?? ""),
         appendSpace: true
       )
       return true
@@ -455,7 +465,7 @@ struct SearchField: View {
         $0.displayName.caseInsensitiveCompare(context.query) == .orderedSame
           || $0.canonicalValue.caseInsensitiveCompare(context.query) == .orderedSame
       }) {
-        completionRequest = .init(text: exact.insertionText, appendSpace: true)
+        completionRequest = .init(text: exact.insertionText(preserving: context.query), appendSpace: true)
         return true
       }
       return false

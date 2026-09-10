@@ -13,6 +13,28 @@ enum SearchWindowMetrics {
   static let minimumSize = NSSize(width: 640, height: 400)
 }
 
+private struct SearchCacheKey: Hashable {
+  let siteID: String
+  let jql: String
+  let resultLimit: Int
+}
+
+private struct SearchCacheEntry {
+  let issues: [JiraIssue]
+  let fetchedAt: Date
+
+  var isFresh: Bool { fetchedAt.timeIntervalSinceNow > -60 }
+}
+
+private struct IssueDescriptionCacheKey: Hashable {
+  let siteID: String
+  let issueID: String
+}
+
+private enum CachedIssueDescription {
+  case value(JiraDescription?)
+}
+
 @MainActor
 final class AppModel: ObservableObject {
   static let shared = AppModel()
@@ -33,6 +55,9 @@ final class AppModel: ObservableObject {
   @Published private(set) var isActionsMenuPresented = false
   @Published private(set) var selectedIssueActionIndex = 0
   @Published private(set) var isIssuePreviewPresented = false
+  @Published private(set) var issuePreviewDescription: JiraDescription?
+  @Published private(set) var isIssuePreviewLoading = false
+  @Published private(set) var issuePreviewErrorMessage: String?
   @Published private(set) var isSeeMoreResultsSelected = false
 
   let preferences = AppPreferences.shared
@@ -43,13 +68,20 @@ final class AppModel: ObservableObject {
   let images: ImageRepository
 
   private var searchTask: Task<Void, Never>?
+  private var previewTask: Task<Void, Never>?
+  private var previewPrefetchTask: Task<Void, Never>?
   private var autocompleteTask: Task<Void, Never>?
   private var connectionTask: Task<Void, Never>?
   private weak var searchWindow: NSWindow?
   private var searchWindowDidResignKeyObserver: NSObjectProtocol?
   private var searchWindowDidBecomeKeyObserver: NSObjectProtocol?
   private var searchWindowFocusTask: Task<Void, Never>?
+  private var handlesPendingActivation = false
   private var displayedJQL: String?
+  private var searchGeneration = 0
+  private var searchCache: [SearchCacheKey: SearchCacheEntry] = [:]
+  private var descriptionCache: [IssueDescriptionCacheKey: CachedIssueDescription] = [:]
+  private var descriptionTasks: [IssueDescriptionCacheKey: Task<JiraDescription?, Error>] = [:]
 
   var isLoading: Bool { isSearching || isConnecting }
 
@@ -120,6 +152,11 @@ final class AppModel: ObservableObject {
     if isChangingSite {
       searchTask?.cancel()
       autocompleteTask?.cancel()
+      cancelIssuePreviewWork()
+      descriptionTasks.values.forEach { $0.cancel() }
+      descriptionTasks = [:]
+      descriptionCache = [:]
+      searchCache = [:]
       issues = []
       selectedIssueID = nil
       isSeeMoreResultsSelected = false
@@ -131,12 +168,18 @@ final class AppModel: ObservableObject {
     selectedSite = site
     preferences.selectedSite = site
     await client.setSite(site)
-    isSearching = true
+
+    let parsedInput = SearchQueryParser().parse(input)
+    let canSearchWithoutMetadata = parsedInput.unresolvedShortcuts.isEmpty
+    if canSearchWithoutMetadata {
+      scheduleSearch(immediate: true)
+    }
     do {
       try await metadata.load(siteID: site.id)
-      scheduleSearch(immediate: true)
+      if !canSearchWithoutMetadata {
+        scheduleSearch(immediate: true)
+      }
     } catch {
-      isSearching = false
       errorMessage = error.userFacingMessage
     }
   }
@@ -145,6 +188,7 @@ final class AppModel: ObservableObject {
     connectionTask?.cancel()
     searchTask?.cancel()
     autocompleteTask?.cancel()
+    cancelIssuePreviewWork()
     Task {
       do { try await auth.logout() } catch { errorMessage = error.userFacingMessage }
       isAuthenticated = false
@@ -157,6 +201,10 @@ final class AppModel: ObservableObject {
       selectedIssueID = nil
       isSeeMoreResultsSelected = false
       displayedJQL = nil
+      searchCache = [:]
+      descriptionCache = [:]
+      descriptionTasks.values.forEach { $0.cancel() }
+      descriptionTasks = [:]
       isIssuePreviewPresented = false
       input = ""
     }
@@ -164,6 +212,7 @@ final class AppModel: ObservableObject {
 
   func clearCachedData() async {
     searchTask?.cancel()
+    cancelIssuePreviewWork()
     isSearching = false
     issues = []
     selectedIssueID = nil
@@ -171,6 +220,10 @@ final class AppModel: ObservableObject {
     displayedJQL = nil
     isIssuePreviewPresented = false
     images.clearMemory()
+    searchCache = [:]
+    descriptionCache = [:]
+    descriptionTasks.values.forEach { $0.cancel() }
+    descriptionTasks = [:]
     await metadata.clearMemory()
     do {
       try await cache.clear()
@@ -196,20 +249,30 @@ final class AppModel: ObservableObject {
   }
 
   func inputDidChange(_ input: String) {
+    updateInput(input, immediate: false)
+  }
+
+  func inputDidCompleteShortcut(_ input: String) {
+    updateInput(input, immediate: true)
+  }
+
+  private func updateInput(_ input: String, immediate: Bool) {
     dismissActionsMenu()
     dismissIssuePreview()
+    previewPrefetchTask?.cancel()
+    previewPrefetchTask = nil
     if isSeeMoreResultsSelected {
       isSeeMoreResultsSelected = false
       selectedIssueID = issues.first?.id
     }
     self.input = input
-    scheduleSearch()
+    scheduleSearch(immediate: immediate)
   }
 
   func handleSearchEscape() {
     guard input.isEmpty else {
       updateAutocomplete(nil)
-      inputDidChange("")
+      updateInput("", immediate: true)
       restoreSearchFieldFocus()
       return
     }
@@ -219,42 +282,48 @@ final class AppModel: ObservableObject {
 
   func scheduleSearch(immediate: Bool = false) {
     searchTask?.cancel()
-    guard isAuthenticated, selectedSite != nil else { return }
+    guard isAuthenticated, let scheduledSiteID = selectedSite?.id else { return }
+    searchGeneration += 1
+    let generation = searchGeneration
     let scheduledInput = input
     let scheduledResultLimit = preferences.searchResultLimit.rawValue
+    isSearching = true
     searchTask = Task {
+      defer {
+        if searchGeneration == generation { isSearching = false }
+      }
       if !immediate {
-        try? await Task.sleep(for: .milliseconds(250))
+        try? await Task.sleep(for: .milliseconds(170))
       }
-      guard !Task.isCancelled else {
-        isSearching = false
-        return
-      }
+      guard !Task.isCancelled else { return }
       do {
         let resolvedInput = await resolvingShortcuts(in: scheduledInput)
-        guard !Task.isCancelled, input == scheduledInput else { return }
+        guard !Task.isCancelled, input == scheduledInput,
+          selectedSite?.id == scheduledSiteID
+        else { return }
         let jql = try JQLBuilder().build(parsed: resolvedInput)
-        isSearching = true
         errorMessage = nil
-        let result = try await client.search(jql: jql, maxResults: scheduledResultLimit)
-        guard !Task.isCancelled else {
-          isSearching = false
-          return
+        let cacheKey = SearchCacheKey(
+          siteID: scheduledSiteID,
+          jql: jql,
+          resultLimit: scheduledResultLimit
+        )
+        if let cached = searchCache[cacheKey], cached.isFresh {
+          publishSearchResult(cached.issues, jql: jql)
         }
-        issues = result
-        displayedJQL = jql
-        reconcileSelectedIssue()
+        let result = try await client.search(jql: jql, maxResults: scheduledResultLimit)
+        guard !Task.isCancelled, input == scheduledInput,
+          selectedSite?.id == scheduledSiteID
+        else { return }
+        searchCache[cacheKey] = SearchCacheEntry(issues: result, fetchedAt: Date())
+        trimSearchCache()
+        publishSearchResult(result, jql: jql)
       } catch is CancellationError {
-        isSearching = false
         return
       } catch {
-        guard !Task.isCancelled else {
-          isSearching = false
-          return
-        }
+        guard !Task.isCancelled else { return }
         errorMessage = error.userFacingMessage
       }
-      isSearching = false
     }
   }
 
@@ -267,13 +336,14 @@ final class AppModel: ObservableObject {
       return
     }
     autocompleteTask = Task {
-      if context.kind == .assignee { try? await Task.sleep(for: .milliseconds(180)) }
+      if context.kind == .assignee || context.kind == .reporter { try? await Task.sleep(for: .milliseconds(180)) }
       guard !Task.isCancelled else { return }
       do {
         let suggestions = try await metadata.suggestions(kind: context.kind, query: context.query)
         guard !Task.isCancelled, autocompleteContext == context else { return }
         autocompleteSuggestions = suggestions
       } catch {
+        guard !Task.isCancelled, autocompleteContext == context else { return }
         autocompleteSuggestions = []
       }
     }
@@ -284,13 +354,26 @@ final class AppModel: ObservableObject {
     let shortcuts = parsed.unresolvedShortcuts
     parsed.unresolvedShortcuts = []
 
-    for shortcut in shortcuts {
-      guard
-        let resolved = try? await metadata.exactShortcuts(
-          kind: shortcut.kind,
-          value: shortcut.value
-        ), !resolved.isEmpty
-      else {
+    let resolvedShortcuts = await withTaskGroup(
+      of: (Int, UnresolvedShortcut, [ResolvedShortcut]?).self,
+      returning: [(Int, UnresolvedShortcut, [ResolvedShortcut]?)].self
+    ) { group in
+      for (index, shortcut) in shortcuts.enumerated() {
+        group.addTask { [metadata] in
+          let resolved = try? await metadata.exactShortcuts(
+            kind: shortcut.kind,
+            value: shortcut.value
+          )
+          return (index, shortcut, resolved)
+        }
+      }
+      var values: [(Int, UnresolvedShortcut, [ResolvedShortcut]?)] = []
+      for await value in group { values.append(value) }
+      return values.sorted { $0.0 < $1.0 }
+    }
+
+    for (_, shortcut, resolved) in resolvedShortcuts {
+      guard let resolved, !resolved.isEmpty else {
         parsed.unresolvedShortcuts.append(shortcut)
         continue
       }
@@ -299,6 +382,7 @@ final class AppModel: ObservableObject {
       case .project: parsed.projects.append(contentsOf: resolved)
       case .issueType: parsed.issueTypes.append(contentsOf: resolved)
       case .assignee: parsed.assignees.append(contentsOf: resolved)
+      case .reporter: parsed.reporters.append(contentsOf: resolved)
       }
     }
 
@@ -319,26 +403,63 @@ final class AppModel: ObservableObject {
       selectedIssueID = issues[destination].id
       isSeeMoreResultsSelected = false
     }
+    scheduleDescriptionPrefetch(for: selectedIssue)
   }
 
   func selectIssue(_ id: String) {
     dismissActionsMenu()
     selectedIssueID = id
     isSeeMoreResultsSelected = false
+    scheduleDescriptionPrefetch(for: selectedIssue)
     restoreSearchFieldFocus()
   }
 
   func presentIssuePreview() {
-    guard selectedIssue != nil else { return }
+    guard let issue = selectedIssue, let siteID = selectedSite?.id else { return }
     updateAutocomplete(nil)
     dismissActionsMenu()
     isIssuePreviewPresented = true
+    issuePreviewErrorMessage = nil
+    previewTask?.cancel()
+
+    let cacheKey = IssueDescriptionCacheKey(siteID: siteID, issueID: issue.id)
+    if case .value(let description) = descriptionCache[cacheKey] {
+      issuePreviewDescription = description
+      isIssuePreviewLoading = false
+      return
+    }
+
+    issuePreviewDescription = nil
+    isIssuePreviewLoading = true
+    previewTask = Task {
+      do {
+        let description = try await description(for: issue, siteID: siteID)
+        guard !Task.isCancelled, isIssuePreviewPresented,
+          selectedIssueID == issue.id, selectedSite?.id == siteID
+        else { return }
+        issuePreviewDescription = description
+        isIssuePreviewLoading = false
+      } catch is CancellationError {
+        return
+      } catch {
+        guard !Task.isCancelled, isIssuePreviewPresented,
+          selectedIssueID == issue.id, selectedSite?.id == siteID
+        else { return }
+        issuePreviewErrorMessage = error.userFacingMessage
+        isIssuePreviewLoading = false
+      }
+    }
   }
 
   func dismissIssuePreview() {
     guard isIssuePreviewPresented else { return }
     dismissActionsMenu()
     isIssuePreviewPresented = false
+    previewTask?.cancel()
+    previewTask = nil
+    issuePreviewDescription = nil
+    isIssuePreviewLoading = false
+    issuePreviewErrorMessage = nil
     restoreSearchFieldFocus()
   }
 
@@ -537,7 +658,7 @@ final class AppModel: ObservableObject {
     guard let window = resolvedSearchWindow else { return }
     searchWindowFocusTask?.cancel()
     dismissActionsMenu()
-    NSApp.activate(ignoringOtherApps: true)
+    activateForExplicitWindowAction()
     window.level = .floating
     window.makeKeyAndOrderFront(nil)
     focusPrimaryControl(in: window)
@@ -580,7 +701,25 @@ final class AppModel: ObservableObject {
   func prepareToOpenSettings() {
     searchWindowFocusTask?.cancel()
     searchWindow?.level = .normal
+    activateForExplicitWindowAction()
+  }
+
+  private func activateForExplicitWindowAction() {
+    // The caller owns presentation for this activation, including Settings and search focus.
+    if !NSApp.isActive { handlesPendingActivation = true }
     NSApp.activate(ignoringOtherApps: true)
+  }
+
+  func applicationDidBecomeActive() {
+    let wasHandled = handlesPendingActivation
+    handlesPendingActivation = false
+    guard !wasHandled else { return }
+    showSearchWindow()
+  }
+
+  func applicationDidResignActive() {
+    // Do not let an interrupted explicit activation suppress a later Cmd+Tab return.
+    handlesPendingActivation = false
   }
 
   func settingsDidClose() {
@@ -615,12 +754,13 @@ final class AppModel: ObservableObject {
     }
   }
 
+  // Leave 40% of the spare vertical space above the window for a slightly raised center.
   private func positionAtCenterOfActiveScreen(_ window: NSWindow) {
     guard let frame = activeScreen(for: window)?.visibleFrame else { return }
     window.setFrameOrigin(
       NSPoint(
         x: frame.midX - window.frame.width / 2,
-        y: frame.midY - window.frame.height / 2
+        y: frame.minY + max(0, frame.height - window.frame.height) * 0.6
       ))
   }
 
@@ -630,7 +770,7 @@ final class AppModel: ObservableObject {
     window.setFrame(
       NSRect(
         x: frame.midX - size.width / 2,
-        y: frame.midY - size.height / 2,
+        y: frame.minY + max(0, frame.height - size.height) * 0.6,
         width: size.width,
         height: size.height
       ),
@@ -677,8 +817,68 @@ final class AppModel: ObservableObject {
 
   private func applyScopeQuery(_ updated: String) {
     updateAutocomplete(nil)
-    inputDidChange(updated)
+    updateInput(updated, immediate: true)
     restoreSearchFieldFocus()
+  }
+
+  private func publishSearchResult(_ result: [JiraIssue], jql: String) {
+    issues = result
+    displayedJQL = jql
+    reconcileSelectedIssue()
+    scheduleDescriptionPrefetch(for: selectedIssue)
+  }
+
+  private func trimSearchCache() {
+    while searchCache.count > 20,
+      let oldestKey = searchCache.min(by: { $0.value.fetchedAt < $1.value.fetchedAt })?.key
+    {
+      searchCache.removeValue(forKey: oldestKey)
+    }
+  }
+
+  private func scheduleDescriptionPrefetch(for issue: JiraIssue?) {
+    previewPrefetchTask?.cancel()
+    guard let issue, let siteID = selectedSite?.id else { return }
+    let cacheKey = IssueDescriptionCacheKey(siteID: siteID, issueID: issue.id)
+    guard descriptionCache[cacheKey] == nil else { return }
+
+    previewPrefetchTask = Task(priority: .utility) {
+      try? await Task.sleep(for: .milliseconds(120))
+      guard !Task.isCancelled else { return }
+      _ = try? await description(for: issue, siteID: siteID)
+    }
+  }
+
+  private func description(for issue: JiraIssue, siteID: String) async throws -> JiraDescription? {
+    let cacheKey = IssueDescriptionCacheKey(siteID: siteID, issueID: issue.id)
+    if case .value(let description) = descriptionCache[cacheKey] { return description }
+    if let task = descriptionTasks[cacheKey] { return try await task.value }
+
+    let task = Task { [client] in
+      try await client.issueDescription(issueID: issue.id)
+    }
+    descriptionTasks[cacheKey] = task
+    do {
+      let value = try await task.value
+      descriptionTasks[cacheKey] = nil
+      if selectedSite?.id == siteID {
+        descriptionCache[cacheKey] = .value(value)
+      }
+      return value
+    } catch {
+      descriptionTasks[cacheKey] = nil
+      throw error
+    }
+  }
+
+  private func cancelIssuePreviewWork() {
+    previewTask?.cancel()
+    previewTask = nil
+    previewPrefetchTask?.cancel()
+    previewPrefetchTask = nil
+    issuePreviewDescription = nil
+    isIssuePreviewLoading = false
+    issuePreviewErrorMessage = nil
   }
 
   private func uniqueValues<Value: Identifiable>(_ values: [Value]) -> [Value]

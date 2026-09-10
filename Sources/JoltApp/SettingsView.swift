@@ -96,8 +96,8 @@ struct SettingsView: View {
 
         settingsSection("Mac Behavior") {
           VStack(spacing: 0) {
-            SettingsRow(title: "Show Dock icon") {
-              Toggle("Show Dock icon", isOn: $preferences.showDockIcon)
+            SettingsRow(title: "Show in Dock and app switcher") {
+              Toggle("Show in Dock and app switcher", isOn: $preferences.showDockIcon)
                 .labelsHidden()
             }
             SettingsDivider()

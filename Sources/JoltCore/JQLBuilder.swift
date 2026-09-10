@@ -38,6 +38,12 @@ public struct JQLBuilder: Sendable {
         functionValues: ["currentUser()"],
         to: &conditions
       )
+      appendInClause(
+        field: "reporter",
+        values: parsed.reporters.map(\.canonicalValue),
+        functionValues: ["currentUser()"],
+        to: &conditions
+      )
       conditions.append(contentsOf: parsed.plainTerms.map { "text ~ \(quoted($0 + "*"))" })
     }
 

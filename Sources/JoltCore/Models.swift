@@ -4,12 +4,14 @@ public enum SearchShortcutKind: String, Codable, CaseIterable, Sendable {
   case project
   case issueType
   case assignee
+  case reporter
 
   public var prefix: Character {
     switch self {
     case .project: return "@"
     case .issueType: return "#"
     case .assignee: return "~"
+    case .reporter: return ">"
     }
   }
 
@@ -18,6 +20,7 @@ public enum SearchShortcutKind: String, Codable, CaseIterable, Sendable {
     case "@": self = .project
     case "#": self = .issueType
     case "~": self = .assignee
+    case ">": self = .reporter
     default: return nil
     }
   }
@@ -28,21 +31,39 @@ public struct ResolvedShortcut: Codable, Hashable, Identifiable, Sendable {
   public let kind: SearchShortcutKind
   public let displayName: String
   public let canonicalValue: String
+  public let detail: String?
 
   public init(
     id: UUID = UUID(),
     kind: SearchShortcutKind,
     displayName: String,
-    canonicalValue: String
+    canonicalValue: String,
+    detail: String? = nil
   ) {
     self.id = id
     self.kind = kind
     self.displayName = displayName
     self.canonicalValue = canonicalValue
+    self.detail = detail
   }
 
   public var insertionText: String {
     Self.insertionText(kind: kind, displayName: displayName)
+  }
+
+  public func insertionText(preserving query: String) -> String {
+    guard !query.isEmpty else { return insertionText }
+    if let range = displayName.range(of: query, options: [.caseInsensitive, .anchored]) {
+      return Self.insertionText(
+        kind: kind, displayName: query + String(displayName[range.upperBound...]))
+    }
+    // Exact project-name aliases and canonical values also resolve without changing the input.
+    if canonicalValue.caseInsensitiveCompare(query) == .orderedSame
+      || (kind == .project && detail?.caseInsensitiveCompare(query) == .orderedSame)
+    {
+      return Self.insertionText(kind: kind, displayName: query)
+    }
+    return insertionText
   }
 
   private static func insertionText(kind: SearchShortcutKind, displayName: String) -> String {
@@ -71,6 +92,7 @@ public struct ParsedSearch: Equatable, Sendable {
   public var plainTerms: [String]
   public var projects: [ResolvedShortcut]
   public var issueTypes: [ResolvedShortcut]
+  public var reporters: [ResolvedShortcut]
   public var assignees: [ResolvedShortcut]
   public var unresolvedShortcuts: [UnresolvedShortcut]
   public var directIssueKey: String?
@@ -80,6 +102,7 @@ public struct ParsedSearch: Equatable, Sendable {
     projects: [ResolvedShortcut] = [],
     issueTypes: [ResolvedShortcut] = [],
     assignees: [ResolvedShortcut] = [],
+    reporters: [ResolvedShortcut] = [],
     unresolvedShortcuts: [UnresolvedShortcut] = [],
     directIssueKey: String? = nil
   ) {
@@ -87,6 +110,7 @@ public struct ParsedSearch: Equatable, Sendable {
     self.projects = projects
     self.issueTypes = issueTypes
     self.assignees = assignees
+    self.reporters = reporters
     self.unresolvedShortcuts = unresolvedShortcuts
     self.directIssueKey = directIssueKey
   }
