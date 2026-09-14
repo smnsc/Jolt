@@ -26,7 +26,7 @@ AppModel (@MainActor) <---- SearchView / SettingsView / SearchField
 
 `AppModel` is the coordination point. It owns published connection, input, results, selection, issue-preview, error, and autocomplete state. It also owns cancellable tasks for connection, search, and autocomplete work.
 
-The search window uses custom, draggable chrome but remains a native, resizable titled window underneath so it can become key after being dismissed and restored. `AppModel` owns showing, hiding, and resetting it to its default horizontally centered frame, with 40% of spare vertical space above it; restoration defers first-responder focus until the window is key.
+The search window uses custom, draggable chrome but remains a native, resizable titled window underneath so it can become key after being dismissed and restored. Minimization is disabled, including Command-M. `AppModel` owns showing, hiding, and resetting it to its default horizontally centered frame, with 40% of spare vertical space above it; restoration defers first-responder focus until the window is key.
 
 App activation restores search, including when Settings is open. Explicit search and Settings actions own their pending activation so the delegate does not duplicate presentation or steal Settings focus. Deactivation clears pending activation ownership. The “Show in Dock and app switcher” setting controls the existing regular/accessory activation policy.
 

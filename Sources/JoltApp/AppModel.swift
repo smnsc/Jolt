@@ -595,6 +595,8 @@ final class AppModel: ObservableObject {
     guard isNewWindow else { return }
 
     searchWindow.styleMask.insert([.fullSizeContentView, .resizable])
+    // Hiding the title-bar button alone still allows minimization through Command-M.
+    searchWindow.styleMask.remove(.miniaturizable)
     searchWindow.minSize = SearchWindowMetrics.minimumSize
     searchWindow.maxSize = NSSize(
       width: CGFloat.greatestFiniteMagnitude,
