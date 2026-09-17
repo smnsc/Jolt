@@ -1081,7 +1081,15 @@ private struct StatusPill: View {
         .fill(Color(nsColor: .controlBackgroundColor).opacity(0.94))
         .overlay {
           RoundedRectangle(cornerRadius: 6, style: .continuous)
-            .fill(tint.opacity(0.16))
+            .fill(tint.opacity(status.category == .new ? 0.30 : 0.16))
+        }
+        .overlay {
+          // Neutral statuses need an edge against similarly grey window materials.
+          RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .strokeBorder(
+              Color.primary.opacity(status.category == .new ? 0.18 : 0),
+              lineWidth: 1
+            )
         }
     }
     .lineLimit(1)
