@@ -45,6 +45,18 @@ struct SettingsView: View {
             }
             SettingsDivider()
             SettingsRow(
+              title: "Auto-reset search query",
+              detail: "Clear the query after the search window is hidden."
+            ) {
+              SettingsMenuPicker(
+                title: "Auto-reset search query",
+                selection: $preferences.searchResetDelay,
+                options: SearchResetDelay.allCases,
+                optionTitle: { $0.title }
+              )
+            }
+            SettingsDivider()
+            SettingsRow(
               title: "Scope bar",
               detail: "Choose how Project and Issue Type filters are arranged."
             ) {

@@ -77,6 +77,26 @@ enum SearchResultLimit: Int, Codable, CaseIterable, Identifiable {
   var title: String { String(rawValue) }
 }
 
+enum SearchResetDelay: Int, Codable, CaseIterable, Identifiable {
+  case immediately = 0
+  case fiveSeconds = 5
+  case fifteenSeconds = 15
+  case thirtySeconds = 30
+  case sixtySeconds = 60
+  case ninetySeconds = 90
+  case never = -1
+
+  var id: Int { rawValue }
+
+  var title: String {
+    switch self {
+    case .immediately: return "Immediately"
+    case .never: return "Never"
+    default: return "After \(rawValue) seconds"
+    }
+  }
+}
+
 struct KeyboardShortcutSpec: Codable, Equatable {
   var keyCode: UInt32
   var modifiers: UInt32
@@ -135,6 +155,7 @@ final class AppPreferences: ObservableObject {
     static let selectedSite = "selectedSite"
     static let scopeBarLayout = "scopeBarLayout"
     static let searchResultLimit = "searchResultLimit"
+    static let searchResetDelay = "searchResetDelay"
   }
 
   @Published var appearance: AppearanceMode {
@@ -151,6 +172,9 @@ final class AppPreferences: ObservableObject {
   }
   @Published var searchResultLimit: SearchResultLimit {
     didSet { defaults.set(searchResultLimit.rawValue, forKey: Key.searchResultLimit) }
+  }
+  @Published var searchResetDelay: SearchResetDelay {
+    didSet { defaults.set(searchResetDelay.rawValue, forKey: Key.searchResetDelay) }
   }
   @Published var showDockIcon: Bool {
     didSet {
@@ -185,6 +209,9 @@ final class AppPreferences: ObservableObject {
     self.searchResultLimit =
       SearchResultLimit(rawValue: defaults.object(forKey: Key.searchResultLimit) as? Int ?? 25)
       ?? .twentyFive
+    self.searchResetDelay =
+      SearchResetDelay(rawValue: defaults.object(forKey: Key.searchResetDelay) as? Int ?? 5)
+      ?? .fiveSeconds
     self.showDockIcon = defaults.object(forKey: Key.showDockIcon) as? Bool ?? true
     self.launchAtLogin = defaults.object(forKey: Key.launchAtLogin) as? Bool ?? false
     if let data = defaults.data(forKey: Key.shortcut),

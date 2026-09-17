@@ -99,6 +99,14 @@ Assignee (`~`) and reporter (`>`) autocomplete query their respective Jira field
 `me` as the signed-in user and require an unambiguous exact name or account ID for other users.
 Their suggestion caches are separate, so an assignee match is never reused as a reporter match.
 
+## Automatic query reset
+
+Settings → Search → Auto-reset search query clears the query after the search window is hidden.
+Choices are Immediately, After 5 seconds (default), After 15 seconds, After 30 seconds,
+After 60 seconds, After 90 seconds, and Never. Reopening search before the delay expires cancels
+that reset; hiding it again starts a new delay. The query stays intact while search is visible,
+including the live preview behind Settings.
+
 ## Editing behavior
 
 - Up/down moves through autocomplete when it is open; otherwise it moves result selection.

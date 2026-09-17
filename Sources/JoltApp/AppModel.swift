@@ -77,6 +77,8 @@ final class AppModel: ObservableObject {
   private var searchWindowDidResignKeyObserver: NSObjectProtocol?
   private var searchWindowDidBecomeKeyObserver: NSObjectProtocol?
   private var searchWindowFocusTask: Task<Void, Never>?
+  private var searchResetTask: Task<Void, Never>?
+  private var searchResetDeadline: Date?
   private weak var settingsWindow: NSWindow?
   private var settingsDidBecomeKeyObserver: NSObjectProtocol?
   private var isSettingsPresented = false
@@ -669,6 +671,7 @@ final class AppModel: ObservableObject {
 
   func showSearchWindow() {
     guard let window = resolvedSearchWindow else { return }
+    finishPendingSearchReset()
     searchWindowFocusTask?.cancel()
     dismissActionsMenu()
     // Capture geometry before activation: ordering a SwiftUI window forward can reapply
@@ -720,6 +723,43 @@ final class AppModel: ObservableObject {
     guard let window = searchWindow, window.isVisible else { return }
     hiddenSearchWindowFrame = window.frame
     window.orderOut(nil)
+    scheduleSearchReset()
+  }
+
+  private func scheduleSearchReset() {
+    searchResetTask?.cancel()
+    searchResetTask = nil
+    searchResetDeadline = nil
+    let delay = preferences.searchResetDelay
+    guard delay != .never, !input.isEmpty else { return }
+    guard delay != .immediately else {
+      resetSearchQuery()
+      return
+    }
+    searchResetDeadline = Date().addingTimeInterval(TimeInterval(delay.rawValue))
+    searchResetTask = Task { [weak self] in
+      try? await Task.sleep(for: .seconds(delay.rawValue))
+      guard !Task.isCancelled, let self else { return }
+      guard self.searchWindow?.isVisible != true else { return }
+      self.searchResetDeadline = nil
+      self.searchResetTask = nil
+      self.resetSearchQuery()
+    }
+  }
+
+  private func finishPendingSearchReset() {
+    // Check the deadline as well as the task so returning after sleep still resets the query.
+    if let deadline = searchResetDeadline, deadline <= Date() {
+      resetSearchQuery()
+    }
+    searchResetTask?.cancel()
+    searchResetTask = nil
+    searchResetDeadline = nil
+  }
+
+  private func resetSearchQuery() {
+    updateAutocomplete(nil)
+    updateInput("", immediate: true)
   }
 
   private func restoreSearchWindowFrame(_ frame: NSRect, in window: NSWindow) {
@@ -753,6 +793,7 @@ final class AppModel: ObservableObject {
     searchWindowFocusTask?.cancel()
     activateForExplicitWindowAction()
     guard let window = resolvedSearchWindow else { return }
+    finishPendingSearchReset()
     window.level = .normal
     let frame = hiddenSearchWindowFrame ?? window.frame
     hiddenSearchWindowFrame = nil

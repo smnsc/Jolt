@@ -67,7 +67,7 @@ Logging out removes the Keychain value, clears in-memory state, and deletes cach
 
 - Keychain: Jira site, email, and API token under account key `atlassian.api.credentials`.
 - `UserDefaults`: appearance, background style, scope-bar layout, Dock visibility,
-  launch-at-login choice, shortcut, and selected site.
+  launch-at-login choice, shortcut, search reset delay, and selected site.
 - Caches directory: `Jolt/metadata.json` plus hashed issue-type images.
 - Memory: current results, a 60-second cache of the 20 most recent searches, issue descriptions,
   autocomplete state, metadata, and decoded images.
