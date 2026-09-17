@@ -77,6 +77,9 @@ final class AppModel: ObservableObject {
   private var searchWindowDidResignKeyObserver: NSObjectProtocol?
   private var searchWindowDidBecomeKeyObserver: NSObjectProtocol?
   private var searchWindowFocusTask: Task<Void, Never>?
+  private weak var settingsWindow: NSWindow?
+  private var settingsDidBecomeKeyObserver: NSObjectProtocol?
+  private var isSettingsPresented = false
   private var handlesPendingActivation = false
   private var displayedJQL: String?
   private var searchGeneration = 0
@@ -644,7 +647,12 @@ final class AppModel: ObservableObject {
       object: searchWindow,
       queue: .main
     ) { [weak self] _ in
-      MainActor.assumeIsolated { self?.hideSearchWindow() }
+      // Let Settings finish appearing before deciding whether this focus change dismisses search.
+      DispatchQueue.main.async { [weak self] in
+        guard let self, self.searchWindow?.isKeyWindow != true else { return }
+        guard !self.isSettingsPresented || !NSApp.isActive else { return }
+        self.hideSearchWindow()
+      }
     }
 
     searchWindowDidBecomeKeyObserver = NotificationCenter.default.addObserver(
@@ -668,7 +676,7 @@ final class AppModel: ObservableObject {
     let frameToRestore = hiddenSearchWindowFrame ?? window.frame
     hiddenSearchWindowFrame = nil
     activateForExplicitWindowAction()
-    window.level = .floating
+    window.level = isSettingsPresented ? .normal : .floating
     window.makeKeyAndOrderFront(nil)
     restoreSearchWindowFrame(frameToRestore, in: window)
     focusPrimaryControl(in: window)
@@ -719,10 +727,42 @@ final class AppModel: ObservableObject {
     window.setFrame(frame, display: true)
   }
 
+  func register(settingsWindow: NSWindow) {
+    guard self.settingsWindow !== settingsWindow else { return }
+    self.settingsWindow = settingsWindow
+    if let settingsDidBecomeKeyObserver {
+      NotificationCenter.default.removeObserver(settingsDidBecomeKeyObserver)
+    }
+    settingsDidBecomeKeyObserver = NotificationCenter.default.addObserver(
+      forName: NSWindow.didBecomeKeyNotification,
+      object: settingsWindow,
+      queue: .main
+    ) { [weak self] _ in
+      MainActor.assumeIsolated {
+        // A hot-key or Cmd+Tab search activation may still have focus retries pending.
+        self?.searchWindowFocusTask?.cancel()
+      }
+    }
+    if isSettingsPresented, settingsWindow.isVisible {
+      searchWindow?.order(.below, relativeTo: settingsWindow.windowNumber)
+    }
+  }
+
   func prepareToOpenSettings() {
+    isSettingsPresented = true
     searchWindowFocusTask?.cancel()
-    searchWindow?.level = .normal
     activateForExplicitWindowAction()
+    guard let window = resolvedSearchWindow else { return }
+    window.level = .normal
+    let frame = hiddenSearchWindowFrame ?? window.frame
+    hiddenSearchWindowFrame = nil
+    // Show the live preview without taking keyboard focus away from Settings.
+    if let settingsWindow, settingsWindow.isVisible {
+      window.order(.below, relativeTo: settingsWindow.windowNumber)
+    } else {
+      window.orderFront(nil)
+    }
+    restoreSearchWindowFrame(frame, in: window)
   }
 
   private func activateForExplicitWindowAction() {
@@ -741,9 +781,11 @@ final class AppModel: ObservableObject {
   func applicationDidResignActive() {
     // Do not let an interrupted explicit activation suppress a later Cmd+Tab return.
     handlesPendingActivation = false
+    hideSearchWindow()
   }
 
   func settingsDidClose() {
+    isSettingsPresented = false
     searchWindow?.level = .floating
   }
 

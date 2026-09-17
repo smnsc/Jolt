@@ -32,6 +32,8 @@ Search opts out of saved-window restoration and specifies a 900 × 560 launch pl
 
 App activation restores search, including when Settings is open. Explicit search and Settings actions own their pending activation so the delegate does not duplicate presentation or steal Settings focus. Deactivation clears pending activation ownership. Hiding search records its frame; showing it reapplies that frame immediately and during a 350 ms focus retry period, which only reorders the window if it is not already key. Known issue: shortcut activation from another app can still expand search to the display bounds; these retries do not prevent it. The “Show in Dock and app switcher” setting controls the existing regular/accessory activation policy.
 
+Settings keeps search visible as a live appearance preview, with both windows at normal level so Settings remains accessible. Opening Settings cancels search-focus retries and shows search without taking keyboard focus. Search still hides when the app deactivates or the user explicitly dismisses it; closing Settings restores its floating level. The background slider runs Clear → Tinted → Opaque without changing stored preference values.
+
 ## Important files
 
 | Concern | Primary file | Notes |

@@ -147,6 +147,12 @@ struct SettingsView: View {
     .onChange(of: preferences.searchResultLimit) { _, _ in
       model.scheduleSearch(immediate: true)
     }
+    .background(
+      WindowAccessor { window in
+        model.register(settingsWindow: window)
+      }
+    )
+    .onAppear { model.prepareToOpenSettings() }
     .onDisappear { model.settingsDidClose() }
   }
 
