@@ -11,7 +11,7 @@ struct SettingsView: View {
 
   var body: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: 22) {
+      VStack(alignment: .leading, spacing: 28) {
         settingsSection("Appearance") {
           VStack(spacing: 0) {
             SettingsRow(
@@ -22,7 +22,7 @@ struct SettingsView: View {
             }
             SettingsDivider()
             SettingsRow(
-              title: "Background",
+              title: "Background transparency",
               detail: "Choose how much of the desktop shows through Jolt."
             ) {
               BackgroundPicker(selection: $preferences.background)
@@ -36,36 +36,32 @@ struct SettingsView: View {
               title: "Results",
               detail: "Choose the maximum number of issues shown in Jolt."
             ) {
-              Picker("Results", selection: $preferences.searchResultLimit) {
-                ForEach(SearchResultLimit.allCases) { limit in
-                  Text(limit.title).tag(limit)
-                }
-              }
-              .labelsHidden()
-              .pickerStyle(.menu)
-              .frame(width: 210)
+              SettingsMenuPicker(
+                title: "Results",
+                selection: $preferences.searchResultLimit,
+                options: SearchResultLimit.allCases,
+                optionTitle: { $0.title }
+              )
             }
             SettingsDivider()
             SettingsRow(
-              title: "Scope Bar",
+              title: "Scope bar",
               detail: "Choose how Project and Issue Type filters are arranged."
             ) {
-              Picker("Scope Bar", selection: $preferences.scopeBarLayout) {
-                ForEach(ScopeBarLayoutMode.allCases) { mode in
-                  Text(mode.title).tag(mode)
-                }
-              }
-              .labelsHidden()
-              .pickerStyle(.menu)
-              .frame(width: 210)
+              SettingsMenuPicker(
+                title: "Scope bar",
+                selection: $preferences.scopeBarLayout,
+                options: ScopeBarLayoutMode.allCases,
+                optionTitle: { $0.title }
+              )
             }
           }
         }
 
-        settingsSection("Keyboard Shortcut") {
+        settingsSection("Keyboard shortcut") {
           VStack(spacing: 0) {
             SettingsRow(
-              title: "Show or Hide Jolt",
+              title: "Show or hide Jolt",
               detail: "Use Command, Option, or Control with a key, or use F1–F12 by themselves. Shift alone isn’t supported."
             ) {
               ShortcutRecorderButton(
@@ -94,7 +90,7 @@ struct SettingsView: View {
           }
         }
 
-        settingsSection("Mac Behavior") {
+        settingsSection("Mac behavior") {
           VStack(spacing: 0) {
             SettingsRow(title: "Show in Dock and app switcher") {
               Toggle("Show in Dock and app switcher", isOn: $preferences.showDockIcon)
@@ -140,10 +136,13 @@ struct SettingsView: View {
             .padding(.horizontal, 4)
         }
       }
-      .padding(28)
+      .padding(.horizontal, 30)
+      .padding(.vertical, 26)
     }
-    .frame(width: 680, height: 650)
-    .background(Color(nsColor: .windowBackgroundColor))
+    .frame(width: 740, height: 680)
+    .background(Color(nsColor: .textBackgroundColor))
+    .toggleStyle(.switch)
+    .controlSize(.small)
     .task { await refreshCachedByteCount() }
     .onChange(of: preferences.searchResultLimit) { _, _ in
       model.scheduleSearch(immediate: true)
@@ -158,17 +157,13 @@ struct SettingsView: View {
   ) -> some View {
     VStack(alignment: .leading, spacing: 8) {
       Text(title)
-        .font(.headline)
-        .foregroundStyle(.secondary)
-        .padding(.leading, 4)
+        .font(.system(size: 13, weight: .semibold))
+        .foregroundStyle(.primary)
+        .padding(.leading, 12)
 
       content()
-        .background(Color(nsColor: .controlBackgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay {
-          RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .stroke(.separator.opacity(0.55), lineWidth: 1)
-        }
+        .background(Color.primary.opacity(0.035))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
   }
 
@@ -297,13 +292,13 @@ private struct SettingsRow<Trailing: View>: View {
   }
 
   var body: some View {
-    HStack(alignment: .center, spacing: 24) {
+    HStack(alignment: .center, spacing: 28) {
       VStack(alignment: .leading, spacing: 3) {
         Text(title)
-          .font(.body.weight(.medium))
+          .font(.system(size: 13))
         if let detail {
           Text(detail)
-            .font(.callout)
+            .font(.system(size: 11))
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
         }
@@ -313,15 +308,71 @@ private struct SettingsRow<Trailing: View>: View {
       trailing()
         .fixedSize(horizontal: true, vertical: false)
     }
-    .padding(.horizontal, 18)
-    .padding(.vertical, 14)
+    .padding(.horizontal, 12)
+    .padding(.vertical, 12)
   }
 }
 
 private struct SettingsDivider: View {
   var body: some View {
-    Divider()
-      .padding(.leading, 18)
+    Rectangle()
+      .fill(Color.primary.opacity(0.07))
+      .frame(height: 0.5)
+      .padding(.horizontal, 12)
+  }
+}
+
+// Use a native popup so the selected text and arrow share one reliable hit target.
+private struct SettingsMenuPicker<Value: Hashable & Identifiable>: NSViewRepresentable {
+  let title: String
+  @Binding var selection: Value
+  let options: [Value]
+  let optionTitle: (Value) -> String
+
+  func makeCoordinator() -> Coordinator {
+    Coordinator(self)
+  }
+
+  func makeNSView(context: Context) -> NSPopUpButton {
+    let button = NSPopUpButton(frame: .zero, pullsDown: false)
+    button.isBordered = false
+    button.alignment = .right
+    button.font = .systemFont(ofSize: 13)
+    button.controlSize = .regular
+    button.target = context.coordinator
+    button.action = #selector(Coordinator.selectionChanged(_:))
+    return button
+  }
+
+  func updateNSView(_ button: NSPopUpButton, context: Context) {
+    context.coordinator.parent = self
+    let titles = options.map(optionTitle)
+    if button.itemTitles != titles {
+      button.removeAllItems()
+      button.addItems(withTitles: titles)
+    }
+    if let index = options.firstIndex(of: selection) {
+      button.selectItem(at: index)
+    }
+    button.setAccessibilityLabel(title)
+  }
+
+  func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSPopUpButton, context: Context) -> CGSize? {
+    CGSize(width: 190, height: 28)
+  }
+
+  final class Coordinator: NSObject {
+    var parent: SettingsMenuPicker
+
+    init(_ parent: SettingsMenuPicker) {
+      self.parent = parent
+    }
+
+    @objc func selectionChanged(_ sender: NSPopUpButton) {
+      let index = sender.indexOfSelectedItem
+      guard parent.options.indices.contains(index) else { return }
+      parent.selection = parent.options[index]
+    }
   }
 }
 
@@ -329,70 +380,46 @@ private struct ThemePicker: View {
   @Binding var selection: AppearanceMode
 
   var body: some View {
-    HStack(spacing: 8) {
-      ForEach(AppearanceMode.allCases) { mode in
-        Button {
-          selection = mode
-        } label: {
-          VStack(spacing: 5) {
-            Image(systemName: mode.systemImage)
-              .font(.system(size: 15, weight: .semibold))
-            Text(mode == .automatic ? "Auto" : mode.title)
-              .font(.caption.weight(.medium))
-          }
-          .foregroundStyle(selection == mode ? Color.accentColor : Color.secondary)
-          .frame(width: 64, height: 44)
-          .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-          .background(
-            selection == mode ? Color.accentColor.opacity(0.12) : Color.clear,
-            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-          )
-          .overlay {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-              .stroke(
-                selection == mode ? Color.accentColor : Color.secondary.opacity(0.25),
-                lineWidth: selection == mode ? 2 : 1
-              )
-          }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("\(mode.title) appearance")
-        .accessibilityAddTraits(selection == mode ? .isSelected : [])
-      }
-    }
+    SettingsMenuPicker(
+      title: "Theme",
+      selection: $selection,
+      options: AppearanceMode.allCases,
+      optionTitle: { $0 == .automatic ? "System" : $0.title }
+    )
   }
 }
 
 private struct BackgroundPicker: View {
   @Binding var selection: BackgroundMode
+  private let modes: [BackgroundMode] = [.clear, .tinted, .opaque]
 
   var body: some View {
     VStack(spacing: 3) {
       Slider(value: sliderValue, in: 0...2, step: 1)
-        .frame(width: 260)
+        .frame(width: 190)
         .accessibilityLabel("Background")
         .accessibilityValue(selection.title)
 
       ZStack {
         HStack {
-          modeButton(.opaque)
-          Spacer()
           modeButton(.clear)
+          Spacer()
+          modeButton(.opaque)
         }
         modeButton(.tinted)
       }
-      .frame(width: 260)
+      .frame(width: 190)
     }
   }
 
   private var sliderValue: Binding<Double> {
     Binding(
       get: {
-        Double(BackgroundMode.allCases.firstIndex(of: selection) ?? 1)
+        Double(modes.firstIndex(of: selection) ?? 1)
       },
       set: { value in
-        let index = min(max(Int(value.rounded()), 0), BackgroundMode.allCases.count - 1)
-        selection = BackgroundMode.allCases[index]
+        let index = min(max(Int(value.rounded()), 0), modes.count - 1)
+        selection = modes[index]
       }
     )
   }
@@ -457,16 +484,16 @@ private struct ShortcutRecorderButton: View {
               }
             }
           }
-          .frame(minWidth: 142, minHeight: 34)
+          .frame(minWidth: 110, minHeight: 30)
           .padding(.horizontal, 8)
           .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
           .background(
-            isRecording ? Color.accentColor.opacity(0.14) : Color.clear,
+            isRecording ? Color.accentColor.opacity(0.10) : Color.primary.opacity(0.045),
             in: RoundedRectangle(cornerRadius: 9, style: .continuous)
           )
           .overlay {
             RoundedRectangle(cornerRadius: 9, style: .continuous)
-              .stroke(isRecording ? Color.accentColor : Color.secondary.opacity(0.3), lineWidth: 2)
+              .stroke(isRecording ? Color.accentColor : Color.primary.opacity(0.08), lineWidth: 1)
           }
         }
         .buttonStyle(.plain)
