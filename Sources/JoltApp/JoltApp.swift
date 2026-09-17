@@ -9,7 +9,16 @@ struct JoltApp: App {
 
   var body: some Scene {
     Window("Jolt", id: "search") {
-      SearchView()
+      // Keep dynamic content's measured minimum from resizing the native window. The
+      // container takes the available space and reports only our fixed minimum to the scene.
+      GeometryReader { _ in
+        SearchView()
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+      }
+        .frame(
+          minWidth: SearchWindowMetrics.minimumSize.width,
+          minHeight: SearchWindowMetrics.minimumSize.height
+        )
         .environmentObject(model)
         .environmentObject(preferences)
         .environmentObject(model.images)
@@ -27,6 +36,7 @@ struct JoltApp: App {
     )
     .windowResizability(.contentMinSize)
     .windowStyle(.hiddenTitleBar)
+    .searchWindowLaunchBehavior()
 
     MenuBarExtra("Jolt", image: "MenuBarIcon") {
       Button("Search Issues") { model.showSearchWindow() }
@@ -107,5 +117,32 @@ struct WindowAccessor: NSViewRepresentable {
     DispatchQueue.main.async {
       if let window = nsView.window { onResolve(window) }
     }
+  }
+}
+
+private extension Scene {
+  func searchWindowLaunchBehavior() -> some Scene {
+    // SceneBuilder has no buildEither. Use its availability erasure for both OS branches.
+    let scene = {
+      if #available(macOS 15.0, *) {
+        return SceneBuilder.buildLimitedAvailability(
+          self
+            .restorationBehavior(.disabled)
+            .defaultWindowPlacement { _, context in
+              let bounds = context.defaultDisplay.visibleRect
+              let size = SearchWindowMetrics.defaultSize
+              return WindowPlacement(
+                CGPoint(
+                  x: bounds.midX - size.width / 2,
+                  y: bounds.minY + max(0, bounds.height - size.height) * 0.4
+                ),
+                size: size
+              )
+            }
+        )
+      }
+      return SceneBuilder.buildLimitedAvailability(self)
+    }()
+    return SceneBuilder.buildOptional(scene)
   }
 }

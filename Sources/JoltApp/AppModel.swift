@@ -73,6 +73,7 @@ final class AppModel: ObservableObject {
   private var autocompleteTask: Task<Void, Never>?
   private var connectionTask: Task<Void, Never>?
   private weak var searchWindow: NSWindow?
+  private var hiddenSearchWindowFrame: NSRect?
   private var searchWindowDidResignKeyObserver: NSObjectProtocol?
   private var searchWindowDidBecomeKeyObserver: NSObjectProtocol?
   private var searchWindowFocusTask: Task<Void, Never>?
@@ -594,6 +595,8 @@ final class AppModel: ObservableObject {
     // repeatedly, which causes the window to drift on screen.
     guard isNewWindow else { return }
 
+    // Start each run at the default frame rather than restoring old session geometry.
+    searchWindow.isRestorable = false
     searchWindow.styleMask.insert([.fullSizeContentView, .resizable])
     // Hiding the title-bar button alone still allows minimization through Command-M.
     searchWindow.styleMask.remove(.miniaturizable)
@@ -640,8 +643,8 @@ final class AppModel: ObservableObject {
       forName: NSWindow.didResignKeyNotification,
       object: searchWindow,
       queue: .main
-    ) { [weak searchWindow] _ in
-      searchWindow?.orderOut(nil)
+    ) { [weak self] _ in
+      MainActor.assumeIsolated { self?.hideSearchWindow() }
     }
 
     searchWindowDidBecomeKeyObserver = NotificationCenter.default.addObserver(
@@ -660,9 +663,14 @@ final class AppModel: ObservableObject {
     guard let window = resolvedSearchWindow else { return }
     searchWindowFocusTask?.cancel()
     dismissActionsMenu()
+    // Capture geometry before activation: ordering a SwiftUI window forward can reapply
+    // scene restoration. Keep the user’s frame throughout the activation retry period.
+    let frameToRestore = hiddenSearchWindowFrame ?? window.frame
+    hiddenSearchWindowFrame = nil
     activateForExplicitWindowAction()
     window.level = .floating
     window.makeKeyAndOrderFront(nil)
+    restoreSearchWindowFrame(frameToRestore, in: window)
     focusPrimaryControl(in: window)
 
     // Activation can finish after this method returns, particularly when invoked from the
@@ -674,7 +682,10 @@ final class AppModel: ObservableObject {
         try? await Task.sleep(for: .milliseconds(delay))
         guard !Task.isCancelled, let self, let window else { return }
         guard self.searchWindow === window, window.isVisible, NSApp.isActive else { return }
-        window.makeKeyAndOrderFront(nil)
+        guard !window.inLiveResize else { return }
+        // Re-order only when activation actually lost the key-window request.
+        if !window.isKeyWindow { window.makeKeyAndOrderFront(nil) }
+        self.restoreSearchWindowFrame(frameToRestore, in: window)
         self.focusPrimaryControl(in: window)
       }
     }
@@ -691,13 +702,21 @@ final class AppModel: ObservableObject {
 
   func centerSearchWindow() {
     guard let window = resolvedSearchWindow else { return }
+    hiddenSearchWindowFrame = nil
     restoreDefaultSizeAndCenter(window)
     showSearchWindow()
   }
 
   func hideSearchWindow() {
     searchWindowFocusTask?.cancel()
-    searchWindow?.orderOut(nil)
+    guard let window = searchWindow, window.isVisible else { return }
+    hiddenSearchWindowFrame = window.frame
+    window.orderOut(nil)
+  }
+
+  private func restoreSearchWindowFrame(_ frame: NSRect, in window: NSWindow) {
+    guard !window.inLiveResize, window.frame != frame else { return }
+    window.setFrame(frame, display: true)
   }
 
   func prepareToOpenSettings() {
@@ -777,7 +796,7 @@ final class AppModel: ObservableObject {
         height: size.height
       ),
       display: true,
-      animate: true
+      animate: false
     )
   }
 
