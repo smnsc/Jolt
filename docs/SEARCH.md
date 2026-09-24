@@ -110,8 +110,9 @@ including the live preview behind Settings.
 ## Editing behavior
 
 - Up/down moves through autocomplete when it is open; otherwise it moves result selection.
-- Right Arrow opens the selected issue's description preview. Left Arrow, Backspace, or Escape
-  returns from the preview to the search results.
+- Right Arrow opens the selected issue's description preview only when the search cursor is at
+  the end, with no selected text or modifier keys held. Otherwise it uses normal text editing.
+  Left Arrow, Backspace, or Escape returns from the preview to the search results.
 - Completion preserves the casing of an already typed matching prefix or exact value; added text
   uses the suggestion’s casing. Metadata resolution remains case-insensitive.
 - Return or Tab inserts the selected suggestion as plain text followed by a space. Tab does nothing

@@ -58,7 +58,11 @@ final class SearchTextView: NSTextView {
     case 49: command = .commitExactAndInsertSpace
     case 125: command = .moveDown
     case 126: command = .moveUp
-    case 124: command = .moveRight
+    case 124 where
+      event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty
+        && selectedRange() == NSRange(location: (string as NSString).length, length: 0)
+        && !hasMarkedText():
+      command = .moveRight
     case 53: command = .escape
     default: command = nil
     }
