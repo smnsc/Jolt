@@ -76,6 +76,7 @@ final class AppModel: ObservableObject {
   private var hiddenSearchWindowFrame: NSRect?
   private var searchWindowDidResignKeyObserver: NSObjectProtocol?
   private var searchWindowDidBecomeKeyObserver: NSObjectProtocol?
+  private var screenParametersObserver: NSObjectProtocol?
   private var searchWindowFocusTask: Task<Void, Never>?
   private var searchResetTask: Task<Void, Never>?
   private var searchResetDeadline: Date?
@@ -618,6 +619,9 @@ final class AppModel: ObservableObject {
     if let searchWindowDidBecomeKeyObserver {
       NotificationCenter.default.removeObserver(searchWindowDidBecomeKeyObserver)
     }
+    if let screenParametersObserver {
+      NotificationCenter.default.removeObserver(screenParametersObserver)
+    }
 
     searchWindow.level = .floating
     searchWindow.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
@@ -643,6 +647,28 @@ final class AppModel: ObservableObject {
     searchWindow.contentView?.layer?.masksToBounds = true
 
     positionAtCenterOfActiveScreen(searchWindow)
+
+    screenParametersObserver = NotificationCenter.default.addObserver(
+      forName: NSApplication.didChangeScreenParametersNotification,
+      object: nil,
+      queue: .main
+    ) { [weak self] _ in
+      MainActor.assumeIsolated {
+        // Pending activation retries hold coordinates from the previous display geometry.
+        self?.searchWindowFocusTask?.cancel()
+      }
+      // Let AppKit finish updating screen membership and constraining the window first.
+      DispatchQueue.main.async { [weak self] in
+        guard let self, let window = self.searchWindow,
+          let screen = window.screen ?? NSScreen.main ?? NSScreen.screens.first
+        else { return }
+        self.searchWindowFocusTask?.cancel()
+        self.positionAtCenter(window, in: screen.visibleFrame)
+        if self.hiddenSearchWindowFrame != nil || !window.isVisible {
+          self.hiddenSearchWindowFrame = window.frame
+        }
+      }
+    }
 
     searchWindowDidResignKeyObserver = NotificationCenter.default.addObserver(
       forName: NSWindow.didResignKeyNotification,
@@ -862,6 +888,10 @@ final class AppModel: ObservableObject {
   // Leave 40% of the spare vertical space above the window for a slightly raised center.
   private func positionAtCenterOfActiveScreen(_ window: NSWindow) {
     guard let frame = activeScreen(for: window)?.visibleFrame else { return }
+    positionAtCenter(window, in: frame)
+  }
+
+  private func positionAtCenter(_ window: NSWindow, in frame: NSRect) {
     window.setFrameOrigin(
       NSPoint(
         x: frame.midX - window.frame.width / 2,
