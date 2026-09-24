@@ -1,110 +1,81 @@
-# Jolt for macOS
+<p align="center">
+  <img src="Resources/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png" alt="Jolt app icon" width="112" height="112">
+</p>
 
-A native, keyboard-first Jira Cloud issue searcher inspired by the Raycast Jira Search extension. Jolt supports plain prefix text search plus autocomplete-backed `@project`, `#issue type`, `~assignee`, and `>reporter` shortcuts.
+<h1 align="center">Jolt for macOS</h1>
 
-## Highlights
+<p align="center">
+  <strong>Your Jira issues. One shortcut away.</strong><br>
+  Find, preview, and share Jira issues from a native Mac app.
+</p>
 
-- Global **Option-J** shortcut toggles Jolt like Spotlight, with Dock and menu-bar access.
-- Result actions with **Option-Return**: open in Jira, copy the issue key and title, or copy a rich
-  HTML link for pasting into apps such as Microsoft Teams. The footer actions are clickable, and
-  right-clicking a result opens the same action menu.
-- Lightweight issue previews: press **Right Arrow** on a result to read its description without
-  leaving Jolt. Use **Up/Down Arrow** to scroll the preview.
-- Resizable search window: drag its edges to resize it down to a 640 × 400 point minimum, or use
-  the reset action in the window or menu-bar menu to restore its 900 × 560 point default size and
-  center it slightly above the midpoint of the active display.
-- Additive JQL: `pdf export @dev @it #bug #story` means both words, either project, and either issue type.
-- Spotlight-style Project and Issue Type scopes add plain-text shortcuts to the query.
-- Configurable 10, 25, 50, or 100-result limit, with a final handoff to the same live search in Jira.
-- Plain-text autocomplete shortcuts, including issue types with spaces such as `#"User Story"`.
-- User-supplied Atlassian API key with secure Keychain storage.
-- Light, dark, and automatic appearance with opaque, tinted, and clear backgrounds.
-- Configurable shortcut (including standalone F1–F12 keys), “Show in Dock and app switcher,” and Start at Login.
-- Switching back to Jolt with Cmd+Tab brings search forward, even when Settings is open.
+<p align="center">
+  <a href="#get-started">Get started</a> ·
+  <a href="#search-your-way">Search guide</a> ·
+  <a href="docs/DEVELOPMENT.md">Build from source</a>
+</p>
 
-## Requirements
+---
 
-- macOS 14 or later.
-- Xcode 26 or later for Icon Composer asset compilation, release archiving, signing, and notarization. Swift Package tests can also run with a matching Command Line Tools installation.
-- A Jira Cloud account with access to the site you want to search.
+Press **⌥ J**, type what you need, and get back to work. Jolt brings Jira Cloud search to your desktop with autocomplete, quick previews, and shortcuts that keep your hands on the keyboard.
 
-## Connect Jira
+## Why Jolt?
 
-The app shows these connection steps when it launches without saved credentials:
+- **Find issues from anywhere.** Bring up search with a global shortcut, just like Spotlight.
+- **Search without writing JQL.** Combine words with projects, issue types, assignees, and reporters. Autocomplete helps you find the right match.
+- **Preview without switching apps.** Read an issue’s description right in Jolt, or open it in Jira for the full picture.
+- **Share in a few keystrokes.** Copy an issue’s key and title, or a rich link ready to paste into apps like Microsoft Teams.
+- **Make it feel at home.** Choose your shortcut, appearance, and window size. Keep Jolt in the menu bar or Dock, and launch it at login.
 
-1. Open [Atlassian API token settings](https://id.atlassian.com/manage-profile/security/api-tokens).
-2. Create and copy an API token.
-3. Enter the Jira site (for example, `your-team.atlassian.net`) and the email address for the Atlassian account that created the token.
-4. Paste the token into the API key field and connect.
+Jolt is **read-only**: it searches your issues without changing them. Your API token and connection details are stored in **macOS Keychain**.
 
-The API key and its associated connection details are stored in macOS Keychain. The app uses Atlassian's API gateway, so both regular and scoped API tokens are supported when they include the Jira read permissions needed by the app.
+## Get started
 
-## Develop and test
+You’ll need **macOS 14 or later**, a **Jira Cloud account**, and an **Atlassian API token**.
 
-Open `Package.swift` in Xcode, select the `Jolt` scheme, and press Command-R. The app asks for the user's Jira connection details on first launch; no developer-owned Atlassian credentials are required.
+### 1. Build and open Jolt
 
-Run the core Swift Testing suite with Xcode's Test action or:
+With **Xcode 26 or later** installed, run these commands from your checkout:
 
 ```sh
-swift test
-```
-
-The current machine must have a matching Swift compiler and macOS SDK. A full Xcode installation is required for the release packaging workflow.
-
-The app icon is saved from Icon Composer as `Resources/AppIcon.icon`. The build script compiles it alongside `Resources/Assets.xcassets`, which retains the legacy PNG app icon for older macOS versions and the separate menu-bar icon. Edit and save the `.icon` document to update the modern icon; flattened PNG exports are not needed.
-
-## Build a direct-download app
-
-For a local build, run these commands in Terminal, replacing `/path/to/project` with your checkout location:
-
-```sh
-cd /path/to/project
 scripts/build-app.sh
-```
-
-This creates `build/Jolt.app`, signs it for local use, and prints its new build number. No signing credentials are needed. The script automatically uses Xcode at `/Applications/Xcode.app`; for another installation, set `DEVELOPER_DIR` to its `Contents/Developer` directory.
-
-Quit any running copy of Jolt, then launch the new build:
-
-```sh
 open build/Jolt.app
 ```
 
-After changing `Resources/AppIcon.png`, run the same build command: it automatically regenerates the legacy icon sizes. The modern Liquid Glass icon comes from `Resources/AppIcon.icon`, so update that separately in Icon Composer when changing the modern design.
+See the [development guide](docs/DEVELOPMENT.md) for Xcode setup, testing, and release packaging.
 
-For a Developer ID signed release and notarized DMG:
+### 2. Connect your Jira account
 
-```sh
-BUNDLE_IDENTIFIER=com.example.Jolt \
-SIGNING_IDENTITY="Developer ID Application: Example (TEAMID)" \
-scripts/build-app.sh
+1. Create a token in your [Atlassian API token settings](https://id.atlassian.com/manage-profile/security/api-tokens).
+2. Open Jolt and enter your Jira site, such as `your-team.atlassian.net`, and your Atlassian account email.
+3. Paste the token into the **API key** field and connect.
 
-APPLE_ID=... \
-APPLE_TEAM_ID=... \
-APPLE_APP_PASSWORD=... \
-scripts/package-dmg.sh
-```
+Regular and scoped tokens are supported with the Jira read permissions Jolt needs.
 
-Signing values are intentionally excluded from source control.
+### 3. Find your first issue
 
-## Search syntax
+Press **⌥ J** and search by keyword or issue key. Use **↑ / ↓** to select a result, **Return** to open it in Jira, **→** at the end of the search text to preview it, or **⌥ Return** for copy and open actions.
 
-- `pdf export` → `text ~ "pdf*" AND text ~ "export*"`
-- `@dev @it` → either project
-- `#bug #"user story"` → either issue type
-- `~me` or an assignee selected from autocomplete
-- `>me` or a reporter selected from autocomplete (for example, `>"Jane Smith"`)
-- `DEV-1234` → direct issue-key lookup
+## Search your way
 
-Values within one shortcut category use OR semantics; categories and plain text use AND semantics.
-For example, `@dev ~me >"Jane Smith"` finds DEV issues assigned to you and reported by Jane Smith.
-Use `>me >"Jane Smith"` to match either reporter. Names resolve through Jira autocomplete; unknown
-or ambiguous shortcuts must be matched before a search can run.
+Start with a few words. Add shortcuts to narrow things down.
 
-## Maintainer context
+| Search | Find |
+| --- | --- |
+| `pdf export` | Issues matching both word prefixes |
+| `DEV-1234` | A specific issue |
+| `@dev #bug` | Bugs in the DEV project |
+| `~me` | Issues assigned to you |
+| `>me` | Issues reported by you |
+| `@dev ~me pdf` | Your DEV issues matching “pdf” |
+| `#"User Story"` | An issue type with spaces in its name |
 
-Start with [AGENTS.md](AGENTS.md) for the repository map and working rules. More focused context lives in:
+Choose projects, issue types, and people from autocomplete. Use multiple shortcuts of the same kind to include either value: `@dev @it` searches both projects. Different kinds narrow the search together: `@dev #bug ~me` finds DEV bugs assigned to you.
 
-- [Architecture](docs/ARCHITECTURE.md)
-- [Search and JQL contract](docs/SEARCH.md)
-- [Development and release workflow](docs/DEVELOPMENT.md)
+Need more results? **See more results in Jira** opens the same search in your browser.
+
+## For developers
+
+Built with SwiftUI and AppKit. Open `Package.swift` in Xcode to explore the app.
+
+[Development & releases](docs/DEVELOPMENT.md) · [Architecture](docs/ARCHITECTURE.md) · [Search & JQL](docs/SEARCH.md) · [Contributor guide](AGENTS.md)
