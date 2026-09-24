@@ -731,7 +731,8 @@ final class AppModel: ObservableObject {
     searchResetTask = nil
     searchResetDeadline = nil
     let delay = preferences.searchResetDelay
-    guard delay != .never, !input.isEmpty else { return }
+    // An issue opened from the default results still needs to return to search on reset.
+    guard delay != .never, !input.isEmpty || isIssuePreviewPresented else { return }
     guard delay != .immediately else {
       resetSearchQuery()
       return

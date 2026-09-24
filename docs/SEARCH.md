@@ -104,7 +104,8 @@ Their suggestion caches are separate, so an assignee match is never reused as a 
 Settings → Search → Auto-reset search query clears the query after the search window is hidden.
 Choices are Immediately, After 5 seconds (default), After 15 seconds, After 30 seconds,
 After 60 seconds, After 90 seconds, and Never. Reopening search before the delay expires cancels
-that reset; hiding it again starts a new delay. The query stays intact while search is visible,
+that reset; hiding it again starts a new delay. Reset also closes the issue viewer, even when
+the issue was opened with an empty query. The query stays intact while search is visible,
 including the live preview behind Settings.
 
 ## Editing behavior
