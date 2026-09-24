@@ -28,7 +28,7 @@ AppModel (@MainActor) <---- SearchView / SettingsView / SearchField
 
 The search window uses custom, draggable chrome but remains a native, resizable titled window underneath so it can become key after being dismissed and restored. Minimization is disabled, including Command-M. `AppModel` owns its fixed 640 × 400 minimum size; a flexible root container isolates the scene’s size constraints from changing results and preview content so they cannot raise the window minimum. `AppModel` also owns showing, hiding, and resetting it to its default horizontally centered frame, with 40% of spare vertical space above it; restoration defers first-responder focus until the window is key.
 
-Search opts out of saved-window restoration and specifies a 900 × 560 launch placement on macOS 15 and later; macOS 14 retains the native initial-frame setup. Manual resizing is retained within the current run.
+Search opts out of saved-window restoration and specifies a 800 × 500 launch placement on macOS 15 and later; macOS 14 retains the native initial-frame setup. Manual resizing is retained within the current run.
 
 App activation restores search, including when Settings is open. Explicit search and Settings actions own their pending activation so the delegate does not duplicate presentation or steal Settings focus. Deactivation clears pending activation ownership. Hiding search records its frame; showing it reapplies that frame immediately and during a 350 ms focus retry period, which only reorders the window if it is not already key. Known issue: shortcut activation from another app can still expand search to the display bounds; these retries do not prevent it. The “Show in Dock and app switcher” setting controls the existing regular/accessory activation policy.
 

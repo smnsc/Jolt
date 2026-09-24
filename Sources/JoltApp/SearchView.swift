@@ -3,9 +3,9 @@ import JoltCore
 import SwiftUI
 
 private enum IssueListMetrics {
-  static let outerHorizontalInset: CGFloat = 8
-  static let contentHorizontalPadding: CGFloat = 8
-  static let topPadding: CGFloat = 6
+  static let outerHorizontalInset: CGFloat = 7
+  static let contentHorizontalPadding: CGFloat = 7
+  static let topPadding: CGFloat = 5
 
   static var rowInsets: EdgeInsets {
     EdgeInsets(
@@ -46,7 +46,7 @@ struct SearchView: View {
           .environmentObject(model)
       }
     }
-    // Let the root view fill the window's full-size content view. A fixed 560-point root is laid
+    // Let the root view fill the window's full-size content view. A fixed-height root is laid
     // out below the hidden title-bar safe area before ignoresSafeArea shifts it upward, leaving a
     // title-bar-sized gap beneath the footer.
     .frame(
@@ -64,8 +64,8 @@ struct SearchView: View {
       if model.isActionsMenuPresented, model.selectedIssue != nil {
         IssueActionsMenu()
           .environmentObject(model)
-          .padding(.trailing, 18)
-          .padding(.bottom, 50)
+          .padding(.trailing, 15)
+          .padding(.bottom, 46)
           .transition(.move(edge: .bottom).combined(with: .opacity))
           .zIndex(200)
       }
@@ -74,7 +74,7 @@ struct SearchView: View {
   }
 
   private var header: some View {
-    HStack(spacing: 8) {
+    HStack(spacing: 7) {
       if model.isIssuePreviewPresented {
         HeaderButton(
           systemName: "chevron.left",
@@ -102,8 +102,8 @@ struct SearchView: View {
         openSettings()
       }
     }
-    .padding(.horizontal, 14)
-    .frame(height: 54)
+    .padding(.horizontal, 12)
+    .frame(height: 50)
     .background { WindowDragHandle() }
     .zIndex(20)
   }
@@ -228,7 +228,7 @@ private struct SeeMoreResultsRow: View {
 
   var body: some View {
     Button(action: action) {
-      HStack(spacing: 10) {
+      HStack(spacing: 9) {
         Image(systemName: "safari")
           .font(.system(size: 15, weight: .medium))
           .frame(width: 20, height: 20)
@@ -239,7 +239,7 @@ private struct SeeMoreResultsRow: View {
           .font(.system(size: 13, weight: .semibold))
           .foregroundStyle(.secondary)
       }
-      .padding(.vertical, 7)
+      .padding(.vertical, 6)
       .padding(.horizontal, IssueListMetrics.contentHorizontalPadding)
       .contentShape(Rectangle())
     }
@@ -281,12 +281,12 @@ private struct SearchScopeBar: View {
 
   var body: some View {
     ScrollView(.horizontal, showsIndicators: false) {
-      HStack(spacing: 7) {
+      HStack(spacing: 6) {
         scopeChoices
       }
-      .padding(.horizontal, 14)
+      .padding(.horizontal, 12)
     }
-    .frame(height: 42)
+    .frame(height: 38)
     .background(Color(nsColor: .controlBackgroundColor).opacity(0.22))
   }
 
@@ -451,8 +451,8 @@ private struct ScopePill: View {
       Text(title)
         .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
         .lineLimit(1)
-        .padding(.horizontal, 11)
-        .padding(.vertical, 5)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 4)
         .background {
           Capsule(style: .continuous)
             .fill(isSelected ? Color.accentColor.opacity(0.18) : Color.primary.opacity(0.055))
@@ -530,8 +530,8 @@ private struct SearchFooter: View {
       }
     }
     .font(.callout)
-    .padding(.horizontal, 18)
-    .frame(height: 42)
+    .padding(.horizontal, 15)
+    .frame(height: 38)
   }
 }
 
@@ -543,13 +543,13 @@ private struct FooterActionButton: View {
 
   var body: some View {
     Button(action: action) {
-      HStack(spacing: 7) {
+      HStack(spacing: 6) {
         Text(title)
           .fontWeight(.semibold)
         KeyboardShortcutBadge(label: shortcut)
       }
-      .padding(.horizontal, 8)
-      .padding(.vertical, 5)
+      .padding(.horizontal, 7)
+      .padding(.vertical, 4)
       .background(
         isHovered ? Color.primary.opacity(0.085) : Color.clear,
         in: RoundedRectangle(cornerRadius: 7, style: .continuous)
@@ -845,7 +845,7 @@ private struct IssueRow: View {
         onSelect()
       }
     } label: {
-      HStack(spacing: 10) {
+      HStack(spacing: 9) {
         IssueTypeImage(url: issue.issueType.iconURL)
           .environmentObject(images)
         Text(issue.summary)
@@ -854,10 +854,10 @@ private struct IssueRow: View {
         Text("\(issue.key) · \(issue.issueType.name)")
           .foregroundStyle(.secondary)
           .lineLimit(1)
-        Spacer(minLength: 12)
+        Spacer(minLength: 10)
         StatusPill(status: issue.status)
       }
-      .padding(.vertical, 7)
+      .padding(.vertical, 6)
       .padding(.horizontal, IssueListMetrics.contentHorizontalPadding)
       .contentShape(Rectangle())
     }
@@ -1067,15 +1067,15 @@ private struct StatusPill: View {
   let status: JiraStatus
 
   var body: some View {
-    HStack(spacing: 6) {
+    HStack(spacing: 5) {
       Image(systemName: icon)
         .foregroundStyle(tint)
       Text(status.name)
         .foregroundStyle(.primary)
     }
     .font(.system(size: 12, weight: .medium))
-    .padding(.horizontal, 9)
-    .padding(.vertical, 5)
+    .padding(.horizontal, 8)
+    .padding(.vertical, 4)
     .background {
       RoundedRectangle(cornerRadius: 6, style: .continuous)
         .fill(Color(nsColor: .controlBackgroundColor).opacity(0.94))

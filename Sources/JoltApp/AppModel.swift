@@ -9,7 +9,7 @@ struct AutocompleteContext: Equatable {
 }
 
 enum SearchWindowMetrics {
-  static let defaultSize = NSSize(width: 900, height: 560)
+  static let defaultSize = NSSize(width: 800, height: 500)
   static let minimumSize = NSSize(width: 640, height: 400)
 }
 
@@ -624,7 +624,7 @@ final class AppModel: ObservableObject {
     searchWindow.isReleasedWhenClosed = false
     // SwiftUI's hidden-title-bar window remains titled underneath its custom chrome. Do not
     // remove that style: borderless windows cannot reliably become key again after orderOut.
-    // Make the content view occupy the title-bar region as well, so the custom 560-point surface
+    // Make the content view occupy the title-bar region as well, so the custom search surface
     // does not leave a title-bar-sized strip below it.
     searchWindow.titleVisibility = .hidden
     searchWindow.titlebarAppearsTransparent = true
