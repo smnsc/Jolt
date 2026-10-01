@@ -179,7 +179,7 @@ final class AppPreferences: ObservableObject {
   @Published var showDockIcon: Bool {
     didSet {
       defaults.set(showDockIcon, forKey: Key.showDockIcon)
-      NSApp.setActivationPolicy(showDockIcon ? .regular : .accessory)
+      applyDockPolicy()
     }
   }
   @Published var launchAtLogin: Bool {
@@ -243,7 +243,9 @@ final class AppPreferences: ObservableObject {
   }
 
   func applyDockPolicy() {
-    NSApp.setActivationPolicy(showDockIcon ? .regular : .accessory)
+    let policy: NSApplication.ActivationPolicy = showDockIcon ? .regular : .accessory
+    guard NSApp.activationPolicy() != policy else { return }
+    NSApp.setActivationPolicy(policy)
   }
 
   func applyAppearance() {

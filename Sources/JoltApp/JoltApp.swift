@@ -88,6 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   }
 
   func applicationDidBecomeActive(_ notification: Notification) {
+    AppPreferences.shared.applyDockPolicy()
     AppModel.shared.applicationDidBecomeActive()
   }
 
@@ -97,8 +98,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
   func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool
   {
-    AppModel.shared.showSearchWindow()
-    return true
+    // Finish the Dock/Finder reopen event before restoring our policy and window.
+    // We handle presentation ourselves, so suppress AppKit's default reopen handling.
+    DispatchQueue.main.async {
+      AppPreferences.shared.applyDockPolicy()
+      AppModel.shared.showSearchWindow()
+    }
+    return false
   }
 }
 

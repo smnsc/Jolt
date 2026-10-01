@@ -35,7 +35,7 @@ Open `Package.swift` in Xcode and run the `Jolt` scheme for application behavior
 3. Exercise keyboard suggestion selection, copy/paste, Escape, result navigation, and Return-to-open.
 4. Hide and reopen the search window with the global shortcut and menu-bar item.
 5. Check clear-cache versus logout semantics.
-6. Check appearance, Dock visibility, launch at login, and shortcut changes when touched.
+6. Check appearance, Dock visibility, launch at login, and shortcut changes when touched. With Jolt pinned in the Dock, disable “Show in Dock and app switcher”, then click its Dock icon repeatedly with search hidden and visible: search should open without a persistent running dot or app-switcher entry. Repeat after quitting and relaunching; re-enable the setting and confirm normal Dock/app-switcher visibility.
 
 Authentication and Jira calls are live integration paths; the automated suite does not mock or exercise them today.
 
