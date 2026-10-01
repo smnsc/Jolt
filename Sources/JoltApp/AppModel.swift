@@ -83,6 +83,7 @@ final class AppModel: ObservableObject {
   private weak var settingsWindow: NSWindow?
   private var settingsDidBecomeKeyObserver: NSObjectProtocol?
   private var isSettingsPresented = false
+  private var activationPolicyTransitionID: UUID?
   private var handlesPendingActivation = false
   private var displayedJQL: String?
   private var searchGeneration = 0
@@ -678,6 +679,7 @@ final class AppModel: ObservableObject {
       // Let Settings finish appearing before deciding whether this focus change dismisses search.
       DispatchQueue.main.async { [weak self] in
         guard let self, self.searchWindow?.isKeyWindow != true else { return }
+        guard self.activationPolicyTransitionID == nil else { return }
         guard !self.isSettingsPresented || !NSApp.isActive else { return }
         self.hideSearchWindow()
       }
@@ -839,7 +841,39 @@ final class AppModel: ObservableObject {
     NSApp.activate(ignoringOtherApps: true)
   }
 
+  func applyActivationPolicy(_ policy: NSApplication.ActivationPolicy) {
+    // Changing between regular and accessory can hide windows and temporarily resign
+    // activation. Preserve presentation only when the user is currently in Jolt.
+    guard NSApp.isActive else {
+      NSApp.setActivationPolicy(policy)
+      return
+    }
+    let windows = NSApp.orderedWindows.filter { $0.isVisible && !$0.isMiniaturized }
+    let frames = windows.map(\.frame)
+    let keyWindow = NSApp.keyWindow
+    let transitionID = UUID()
+    activationPolicyTransitionID = transitionID
+    searchWindowFocusTask?.cancel()
+    NSApp.setActivationPolicy(policy)
+
+    // Let the policy change finish before restoring the original stacking and focus.
+    DispatchQueue.main.async { [weak self] in
+      guard let self, self.activationPolicyTransitionID == transitionID else { return }
+      NSApp.activate(ignoringOtherApps: true)
+      for (window, frame) in zip(windows, frames).reversed() {
+        window.orderFront(nil)
+        window.setFrame(frame, display: true)
+      }
+      keyWindow?.makeKeyAndOrderFront(nil)
+      DispatchQueue.main.async { [weak self] in
+        guard let self, self.activationPolicyTransitionID == transitionID else { return }
+        self.activationPolicyTransitionID = nil
+      }
+    }
+  }
+
   func applicationDidBecomeActive() {
+    guard activationPolicyTransitionID == nil else { return }
     let wasHandled = handlesPendingActivation
     handlesPendingActivation = false
     guard !wasHandled else { return }
@@ -847,6 +881,7 @@ final class AppModel: ObservableObject {
   }
 
   func applicationDidResignActive() {
+    guard activationPolicyTransitionID == nil else { return }
     // Do not let an interrupted explicit activation suppress a later Cmd+Tab return.
     handlesPendingActivation = false
     hideSearchWindow()

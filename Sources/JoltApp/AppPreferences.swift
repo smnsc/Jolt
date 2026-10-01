@@ -245,7 +245,7 @@ final class AppPreferences: ObservableObject {
   func applyDockPolicy() {
     let policy: NSApplication.ActivationPolicy = showDockIcon ? .regular : .accessory
     guard NSApp.activationPolicy() != policy else { return }
-    NSApp.setActivationPolicy(policy)
+    AppModel.shared.applyActivationPolicy(policy)
   }
 
   func applyAppearance() {
