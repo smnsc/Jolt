@@ -58,7 +58,17 @@ swift build --disable-sandbox --scratch-path "${scratch_path}" \
 binary_dir="$(swift build --disable-sandbox --scratch-path "${scratch_path}" \
   -c "${configuration}" --arch arm64 --arch x86_64 --show-bin-path)"
 
-mkdir -p "${contents_dir}/MacOS" "${contents_dir}/Resources"
+mkdir -p "${contents_dir}/MacOS" "${contents_dir}/Resources" "${contents_dir}/Frameworks"
+# SPM links the framework but this custom .app packager must embed it itself.
+sparkle_framework="${scratch_path}/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework"
+if [[ ! -d "${sparkle_framework}" ]]; then
+  print -u2 "Sparkle framework not found at ${sparkle_framework}."
+  exit 2
+fi
+rm -rf "${contents_dir}/Frameworks/Sparkle.framework"
+ditto "${sparkle_framework}" "${contents_dir}/Frameworks/Sparkle.framework"
+cp "${project_dir}/LICENSE" "${contents_dir}/Resources/LICENSE.txt"
+cp "${project_dir}/THIRD_PARTY_NOTICES.md" "${contents_dir}/Resources/THIRD_PARTY_NOTICES.txt"
 cp "${binary_dir}/Jolt" "${contents_dir}/MacOS/Jolt"
 cp "${project_dir}/Resources/Info.plist" "${plist_path}"
 
@@ -75,25 +85,35 @@ xcrun actool "${project_dir}/Resources/Assets.xcassets" \
 
 /usr/libexec/PlistBuddy -c "Merge ${asset_info_path}" "${plist_path}"
 
-/usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier ${BUNDLE_IDENTIFIER:-com.local.Jolt}" "${plist_path}"
+/usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier ${BUNDLE_IDENTIFIER:-co.simonsc.jolt}" "${plist_path}"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${MARKETING_VERSION:-0.1.0}" "${plist_path}"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${build_number}" "${plist_path}"
 
-if [[ -n "${SIGNING_IDENTITY:-}" ]]; then
-  codesign --force --deep --options runtime --timestamp \
-    --entitlements "${project_dir}/Resources/Jolt.entitlements" \
-    --sign "${SIGNING_IDENTITY}" "${app_dir}"
-  codesign --verify --deep --strict --verbose=2 "${app_dir}"
-else
-  # Seal local builds too, so they are not treated as unsigned applications.
-  # The default ad-hoc requirement includes the build's code hash; unlike an
-  # identifier-only requirement, another local app cannot impersonate it.
-  codesign --force --deep \
-    --entitlements "${project_dir}/Resources/Jolt.entitlements" \
-    --identifier "${BUNDLE_IDENTIFIER:-com.local.Jolt}" \
-    --sign - "${app_dir}"
-  codesign --verify --deep --strict --verbose=2 "${app_dir}"
+# Render concrete identifiers: codesign does not expand Xcode build variables.
+entitlements_path="${output_dir}/Jolt.entitlements"
+sed "s/co.simonsc.jolt/${BUNDLE_IDENTIFIER:-co.simonsc.jolt}/g" \
+  "${project_dir}/Resources/Jolt.entitlements" > "${entitlements_path}"
+if [[ -n "${UPDATE_FEED_URL:-}" ]]; then
+  /usr/libexec/PlistBuddy -c "Set :SUFeedURL ${UPDATE_FEED_URL}" "${plist_path}"
 fi
+
+# Sign nested code from the inside out. Never propagate the host's sandbox
+# entitlements to Sparkle's installer with codesign --deep.
+signing_args=(--force --sign "${SIGNING_IDENTITY:--}")
+if [[ -n "${SIGNING_IDENTITY:-}" ]]; then
+  signing_args+=(--options runtime --timestamp)
+fi
+framework="${contents_dir}/Frameworks/Sparkle.framework/Versions/B"
+codesign "${signing_args[@]}" "${framework}/XPCServices/Installer.xpc"
+codesign "${signing_args[@]}" --preserve-metadata=entitlements "${framework}/XPCServices/Downloader.xpc"
+codesign "${signing_args[@]}" "${framework}/Autoupdate"
+codesign "${signing_args[@]}" "${framework}/Updater.app"
+codesign "${signing_args[@]}" "${contents_dir}/Frameworks/Sparkle.framework"
+# Ad-hoc signatures retain their default hash-bound requirement. Do not weaken
+# Keychain access to an identifier-only requirement to preserve login on updates.
+codesign "${signing_args[@]}" --entitlements "${entitlements_path}" \
+  --identifier "${BUNDLE_IDENTIFIER:-co.simonsc.jolt}" "${app_dir}"
+codesign --verify --deep --strict --verbose=2 "${app_dir}"
 
 if (( build_number > last_build_number )); then
   print -r -- "${build_number}" > "${build_number_path}"

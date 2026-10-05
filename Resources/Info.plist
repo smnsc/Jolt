@@ -13,7 +13,23 @@
     <key>CFBundleExecutable</key>
     <string>Jolt</string>
     <key>CFBundleIdentifier</key>
-    <string>com.local.Jolt</string>
+    <string>co.simonsc.jolt</string>
+    <key>SUFeedURL</key>
+    <string>https://smnsc.github.io/Jolt/appcast.xml</string>
+    <key>SUPublicEDKey</key>
+    <string>Sv6unD2I4m0IAHvCBUc/3N97SVV/ztDt4ImxVrkvZmM=</string>
+    <key>SUEnableInstallerLauncherService</key>
+    <true/>
+    <key>SUVerifyUpdateBeforeExtraction</key>
+    <true/>
+    <key>SURequireSignedFeed</key>
+    <true/>
+    <key>SUEnableAutomaticChecks</key>
+    <true/>
+    <key>SUAutomaticallyUpdate</key>
+    <false/>
+    <key>SUSendProfileInfo</key>
+    <false/>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>

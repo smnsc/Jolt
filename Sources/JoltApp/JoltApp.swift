@@ -6,6 +6,7 @@ struct JoltApp: App {
   @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
   @StateObject private var model = AppModel.shared
   @StateObject private var preferences = AppPreferences.shared
+  @StateObject private var updater = AppUpdater.shared
 
   var body: some Scene {
     Window("Jolt", id: "search") {
@@ -37,12 +38,22 @@ struct JoltApp: App {
     .windowResizability(.contentMinSize)
     .windowStyle(.hiddenTitleBar)
     .searchWindowLaunchBehavior()
+    .commands {
+      CommandGroup(after: .appInfo) {
+        Button("Check for Updates…") { updater.checkForUpdates() }
+          .disabled(!updater.canCheckForUpdates)
+      }
+    }
 
     MenuBarExtra("Jolt", image: "MenuBarIcon") {
       Button("Search Issues") { model.showSearchWindow() }
       Button("Reset Size and Center") { model.centerSearchWindow() }
       SettingsMenuButton()
         .environmentObject(model)
+      Divider()
+      Button("Check for Updates…") { updater.checkForUpdates() }
+        .disabled(!updater.canCheckForUpdates)
+      Link("Support Jolt on Ko-fi", destination: JoltLinks.support)
       Divider()
       Button("Quit Jolt") { NSApp.terminate(nil) }
     }
@@ -51,6 +62,7 @@ struct JoltApp: App {
       SettingsView()
         .environmentObject(model)
         .environmentObject(preferences)
+        .environmentObject(updater)
     }
   }
 }
@@ -81,6 +93,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       AppModel.shared.shortcutErrorMessage = error.userFacingMessage
     }
     AppModel.shared.start()
+    AppUpdater.shared.start()
   }
 
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

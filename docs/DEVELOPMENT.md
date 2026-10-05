@@ -52,7 +52,7 @@ The result is `build/Jolt.app`. The script builds arm64 and x86_64, compiles the
 Release signing and an explicit build-number override can be supplied without editing tracked files:
 
 ```sh
-BUNDLE_IDENTIFIER=com.example.Jolt \
+BUNDLE_IDENTIFIER=co.simonsc.jolt \
 MARKETING_VERSION=0.1.0 \
 BUILD_NUMBER=1 \
 SIGNING_IDENTITY="Developer ID Application: Example (TEAMID)" \
@@ -68,6 +68,19 @@ scripts/package-dmg.sh
 ```
 
 If `APPLE_ID`, `APPLE_TEAM_ID`, and `APPLE_APP_PASSWORD` are all present, the packaging script also submits the DMG for notarization and staples the result. Keep these values in the environment or a local ignored configuration, never in source control.
+
+## Public distribution
+
+Follow [RELEASING.md](RELEASING.md) for the first release and later updates. Sparkle
+2.10.0 is pinned in Package.swift and Package.resolved. The build embeds its framework
+and signs nested helpers individually before signing the host; do not use `--deep`
+for signing. The sandbox installer requires the two bundle-specific Mach lookup
+exceptions in `Resources/Jolt.entitlements`.
+
+The default identifier is `co.simonsc.jolt`. Builds remain ad-hoc signed unless a
+Developer ID identity is supplied. Sparkle archive/feed signatures use a separate,
+free Ed25519 key in the maintainer's Keychain. `scripts/prepare-release.py` prepares
+release assets and a matching Homebrew cask without publishing them.
 
 ## Icons and resources
 

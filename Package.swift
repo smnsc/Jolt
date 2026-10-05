@@ -9,6 +9,9 @@ let package = Package(
     .library(name: "JoltCore", targets: ["JoltCore"]),
     .executable(name: "Jolt", targets: ["JoltApp"]),
   ],
+  dependencies: [
+    .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.10.0")
+  ],
   targets: [
     .target(
       name: "JoltCore",
@@ -18,13 +21,14 @@ let package = Package(
     ),
     .executableTarget(
       name: "JoltApp",
-      dependencies: ["JoltCore"],
+      dependencies: ["JoltCore", .product(name: "Sparkle", package: "Sparkle")],
       linkerSettings: [
         .linkedFramework("AppKit"),
         .linkedFramework("Carbon"),
         .linkedFramework("Security"),
         .linkedFramework("ServiceManagement"),
         .linkedFramework("SwiftUI"),
+        .unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"]),
       ]
     ),
     .testTarget(

@@ -26,7 +26,7 @@ public enum CredentialStoreError: LocalizedError {
 public final class KeychainCredentialStore: CredentialStoring, @unchecked Sendable {
   private let service: String
 
-  public init(service: String = "com.local.Jolt") {
+  public init(service: String = "co.simonsc.jolt") {
     self.service = service
   }
 

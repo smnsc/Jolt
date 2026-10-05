@@ -8,5 +8,10 @@
     <true/>
     <key>com.apple.security.network.server</key>
     <true/>
+    <key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
+    <array>
+        <string>co.simonsc.jolt-spks</string>
+        <string>co.simonsc.jolt-spki</string>
+    </array>
 </dict>
 </plist>

@@ -6,6 +6,7 @@ import SwiftUI
 struct SettingsView: View {
   @EnvironmentObject private var model: AppModel
   @EnvironmentObject private var preferences: AppPreferences
+  @EnvironmentObject private var updater: AppUpdater
   @State private var cachedByteCount: Int64?
   @State private var isClearing = false
 
@@ -137,8 +138,48 @@ struct SettingsView: View {
           }
         }
 
+        settingsSection("Updates") {
+          VStack(spacing: 0) {
+            SettingsRow(title: "Check automatically", detail: "Look for new versions of Jolt each day.") {
+              Toggle("Check automatically", isOn: Binding(
+                get: { updater.automaticallyChecksForUpdates },
+                set: { updater.setAutomaticChecks($0) }
+              )).labelsHidden()
+            }
+            SettingsDivider()
+            SettingsRow(title: "Download and install automatically", detail: "Install downloaded updates when you quit Jolt.") {
+              Toggle("Download and install automatically", isOn: Binding(
+                get: { updater.automaticallyDownloadsUpdates },
+                set: { updater.setAutomaticDownloads($0) }
+              ))
+              .labelsHidden()
+              .disabled(!updater.automaticallyChecksForUpdates)
+            }
+            SettingsDivider()
+            SettingsRow(title: "Software updates", detail: "You may need to reconnect Jira after an update.") {
+              Button("Check for Updates…") { updater.checkForUpdates() }
+                .disabled(!updater.canCheckForUpdates)
+            }
+            if let error = updater.startupError {
+              Text("Updates are unavailable: \(error)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding()
+            }
+          }
+        }
+
         settingsSection("About") {
-          aboutRow
+          VStack(spacing: 0) {
+            aboutRow
+            SettingsDivider()
+            SettingsRow(title: "Free and open source", detail: "Made by Simon. Supported by optional donations.") {
+              HStack(spacing: 16) {
+                Link("Source code", destination: JoltLinks.source)
+                Link("Support Jolt on Ko-fi", destination: JoltLinks.support)
+              }
+            }
+          }
         }
 
         if let error = model.errorMessage {

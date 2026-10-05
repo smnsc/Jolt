@@ -92,3 +92,22 @@ The metadata disk snapshot is scoped to one site ID and fresh for 24 hours. Assi
 ## Current test boundary
 
 Automated tests cover `JoltCore` parser, JQL, and structured-description decoding behavior. The macOS application target has no automated UI or service tests yet, so changes to authentication, networking, caches, preferences, hot keys, windows, and rich-text editing require manual verification.
+
+## Updates and distribution
+
+`AppUpdater` is a main-actor singleton owning Sparkle's standard updater controller.
+It starts after application launch; menu and Settings actions share it. Sparkle owns
+update preferences and publishes their state to SwiftUI. Checks default to daily;
+automatic download/install is opt-in. Profile reporting is disabled. Update traffic
+to GitHub is independent of Jira's authenticated URL session.
+
+The host embeds Sparkle's installer service and grants only its two named Mach
+lookups in addition to the existing sandbox permissions. Update archives are verified
+before extraction, and the feed itself must be signed. The public verification key
+is in Info.plist; the private key lives only in the maintainer's Keychain.
+
+The app identifier and Keychain service are `co.simonsc.jolt`. Development installs
+with the previous identifier are not automatically migrated across sandbox domains.
+Ad-hoc code identities change between builds; reconnecting Jira may be necessary
+after updates. Do not replace hash-bound Keychain requirements with identifier-only
+trust. See RELEASING.md for the release and migration checks.

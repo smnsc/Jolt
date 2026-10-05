@@ -10,9 +10,11 @@
 </p>
 
 <p align="center">
+  <a href="https://smnsc.github.io/Jolt/">Website</a> ·
   <a href="#get-started">Get started</a> ·
   <a href="#search-your-way">Search guide</a> ·
-  <a href="docs/DEVELOPMENT.md">Build from source</a>
+  <a href="docs/DEVELOPMENT.md">Build from source</a> ·
+  <a href="https://ko-fi.com/simonsc">Support Jolt</a>
 </p>
 
 ---
@@ -33,7 +35,20 @@ Jolt is **read-only**: it searches your issues without changing them. Your API t
 
 You’ll need **macOS 14 or later**, a **Jira Cloud account**, and an **Atlassian API token**.
 
-### 1. Build and open Jolt
+### 1. Install Jolt
+
+Download a DMG from [GitHub Releases](https://github.com/smnsc/Jolt/releases), open it,
+and drag **Jolt** to **Applications**. If no release is listed yet, build from source below.
+
+Jolt is ad-hoc signed and **not Apple-notarized**. After trying to open it, use
+**System Settings → Privacy & Security → Open Anyway** if macOS blocks it.
+See [Apple’s instructions](https://support.apple.com/en-us/102445).
+
+Jolt checks for updates automatically. **Settings → Updates** lets you turn checks
+off, enable automatic installation, or check manually. Jira may need reconnecting
+after an update because ad-hoc builds have different Keychain identities.
+
+#### Build from source
 
 With **Xcode 26 or later** installed, run these commands from your checkout:
 
@@ -79,3 +94,15 @@ Need more results? **See more results in Jira** opens the same search in your br
 Built with SwiftUI and AppKit. Open `Package.swift` in Xcode to explore the app.
 
 [Development & releases](docs/DEVELOPMENT.md) · [Architecture](docs/ARCHITECTURE.md) · [Search & JQL](docs/SEARCH.md) · [Contributor guide](AGENTS.md)
+
+## License and support
+
+Jolt is available under the [MIT license](LICENSE). See [third-party notices](THIRD_PARTY_NOTICES.md)
+for Sparkle and its dependencies. Donations are optional: [Support Jolt on Ko-fi](https://ko-fi.com/simonsc).
+
+Jolt is an independent project, not affiliated with Atlassian. It sends Jira requests
+to Atlassian and update requests to GitHub. It does not send Jira credentials with
+update checks or collect usage analytics.
+
+Maintainers: see the [release guide](docs/RELEASING.md) for GitHub Pages, signed
+updates, and the Homebrew tap.
