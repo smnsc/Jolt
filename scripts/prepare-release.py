@@ -80,7 +80,7 @@ def main():
   homepage "https://smnsc.github.io/Jolt/"
 
   auto_updates true
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "Jolt.app"
 
