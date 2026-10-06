@@ -99,7 +99,7 @@ The app sandbox currently allows client and server networking. Review entitlemen
 
 ## Change checklist
 
-- Search model, parser, or JQL: update `JoltCore` tests and `agents/SEARCH.md`.
+- Search model, parser, or JQL: update `JoltCore` tests and `dev-docs/SEARCH.md`.
 - Jira endpoint or DTO: verify error decoding, cancellation behavior, and that credentials are attached only to trusted Atlassian URLs.
 - Persistence: preserve the distinction between Keychain secrets, `UserDefaults` preferences, and disposable caches.
 - Site switching or logout: clear site-scoped memory and prevent stale tasks from publishing results.

@@ -33,7 +33,7 @@ users to manually install a new build. Export/import options are documented by
 4. Write release notes, then run:
 
    ```sh
-   scripts/prepare-release.py agents/releases/0.1.0.md
+   scripts/prepare-release.py dev-docs/releases/0.1.0.md
    ```
 
    This verifies the app and public key, prepares a drag-to-Applications DMG and
@@ -53,7 +53,7 @@ until the matching release downloads exist. Never modify a signed feed by hand.
 2. Create a GitHub Release for that tag. Upload `Jolt-0.1.0.dmg`,
    `Jolt-0.1.0.zip`, and `SHA256SUMS`, and use `RELEASE_NOTES.md` as its notes.
    Download the uploaded ZIP and verify its checksum before continuing.
-3. Copy the generated `appcast.xml` into `website/appcast.xml`, commit and push.
+3. Copy the generated `appcast.xml` into `docs/appcast.xml`, commit and push.
    The Pages workflow deploys it with the site. Verify the live feed and perform
    an update from the previous installed version. Retain previous release assets.
 4. Copy generated `jolt.rb` into `smnsc/homebrew-tap/Casks/jolt.rb`, then run

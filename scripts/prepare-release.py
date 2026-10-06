@@ -38,7 +38,7 @@ def main():
     public_key = run(TOOLS / 'generate_keys', '--account', ACCOUNT, '-p', capture_output=True, text=True).stdout.strip()
     if public_key != info.get('SUPublicEDKey'):
         sys.exit('The app public key does not match the signing key in Keychain.')
-    feed = ROOT / 'website/appcast.xml'
+    feed = ROOT / 'docs/appcast.xml'
     if feed.exists():
         run(TOOLS / 'sign_update', '--account', ACCOUNT, '--verify', feed)
         previous = [int(item.text) for item in ET.parse(feed).iter('{http://www.andymatuschak.org/xml-namespaces/sparkle}version')]
