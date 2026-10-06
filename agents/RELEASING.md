@@ -33,7 +33,7 @@ users to manually install a new build. Export/import options are documented by
 4. Write release notes, then run:
 
    ```sh
-   scripts/prepare-release.py docs/releases/0.1.0.md
+   scripts/prepare-release.py agents/releases/0.1.0.md
    ```
 
    This verifies the app and public key, prepares a drag-to-Applications DMG and

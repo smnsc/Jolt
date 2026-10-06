@@ -13,7 +13,7 @@
   <a href="https://smnsc.github.io/Jolt/">Website</a> ·
   <a href="#get-started">Get started</a> ·
   <a href="#search-your-way">Search guide</a> ·
-  <a href="docs/DEVELOPMENT.md">Build from source</a> ·
+  <a href="agents/DEVELOPMENT.md">Build from source</a> ·
   <a href="https://ko-fi.com/simonsc">Support Jolt</a>
 </p>
 
@@ -57,7 +57,7 @@ scripts/build-app.sh
 open build/Jolt.app
 ```
 
-See the [development guide](docs/DEVELOPMENT.md) for Xcode setup, testing, and release packaging.
+See the [development guide](agents/DEVELOPMENT.md) for Xcode setup, testing, and release packaging.
 
 ### 2. Connect your Jira account
 
@@ -93,7 +93,7 @@ Need more results? **See more results in Jira** opens the same search in your br
 
 Built with SwiftUI and AppKit. Open `Package.swift` in Xcode to explore the app.
 
-[Development & releases](docs/DEVELOPMENT.md) · [Architecture](docs/ARCHITECTURE.md) · [Search & JQL](docs/SEARCH.md) · [Contributor guide](AGENTS.md)
+[Development & releases](agents/DEVELOPMENT.md) · [Architecture](agents/ARCHITECTURE.md) · [Search & JQL](agents/SEARCH.md) · [Contributor guide](AGENTS.md)
 
 ## License and support
 
@@ -104,5 +104,5 @@ Jolt is an independent project, not affiliated with Atlassian. It sends Jira req
 to Atlassian and update requests to GitHub. It does not send Jira credentials with
 update checks or collect usage analytics.
 
-Maintainers: see the [release guide](docs/RELEASING.md) for GitHub Pages, signed
+Maintainers: see the [release guide](agents/RELEASING.md) for GitHub Pages, signed
 updates, and the Homebrew tap.

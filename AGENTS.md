@@ -5,9 +5,9 @@ Jolt is a native, read-only Jira Cloud issue searcher for macOS. It is a Swift P
 ## Start here
 
 1. Read [README.md](README.md) for the product behavior and user-facing search syntax.
-2. Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before changing application state, Jira access, authentication, caching, or UI flow.
-3. Read [docs/SEARCH.md](docs/SEARCH.md) before changing search editing, parsing, autocomplete, or JQL generation.
-4. Use [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for build, test, and release commands.
+2. Read [agents/ARCHITECTURE.md](agents/ARCHITECTURE.md) before changing application state, Jira access, authentication, caching, or UI flow.
+3. Read [agents/SEARCH.md](agents/SEARCH.md) before changing search editing, parsing, autocomplete, or JQL generation.
+4. Use [agents/DEVELOPMENT.md](agents/DEVELOPMENT.md) for build, test, and release commands.
 
 ## Build reporting (mandatory)
 
@@ -31,7 +31,7 @@ Jolt is a native, read-only Jira Cloud issue searcher for macOS. It is a Swift P
 - Keep the editor input as one plain string. Raw `@` (project), `#` (issue type), `~` (assignee), and `>` (reporter) shortcuts must resolve against Jira metadata before JQL reaches the network, without becoming styled editor objects.
 - Keep `JoltCore` free of SwiftUI and app lifecycle concerns. Put deterministic parser/JQL behavior there and cover it with tests.
 - Cancel or supersede stale asynchronous searches and autocomplete requests when input, site, or connection state changes.
-- Keep this guide and the files in `docs/` short and current when changing the behaviors they describe.
+- Keep this guide and the files in `agents/` short and current when changing the behaviors they describe.
 
 ## Definition of done
 
