@@ -110,6 +110,7 @@ including the live preview behind Settings.
 
 ## Editing behavior
 
+- The search editor disables macOS Writing Tools on macOS 15 and later.
 - Up/down moves through autocomplete when it is open; otherwise it moves result selection.
 - Right Arrow opens the selected issue's description preview only when the search cursor is at
   the end, with no selected text or modifier keys held. Otherwise it uses normal text editing.

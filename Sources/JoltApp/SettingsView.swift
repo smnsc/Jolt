@@ -133,6 +133,10 @@ struct SettingsView: View {
         settingsSection("Jira & Data") {
           VStack(spacing: 0) {
             jiraAccountRow
+            JiraAPIKeyExplanation()
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .padding(.horizontal, 16)
+              .padding(.bottom, 14)
             SettingsDivider()
             cachedDataRow
           }

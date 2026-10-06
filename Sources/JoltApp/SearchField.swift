@@ -172,6 +172,9 @@ struct PlainSearchTextEditor: NSViewRepresentable {
     textView.delegate = context.coordinator
     textView.isRichText = false
     textView.importsGraphics = false
+    if #available(macOS 15.0, *) {
+      textView.writingToolsBehavior = .none
+    }
     textView.isContinuousSpellCheckingEnabled = false
     textView.isGrammarCheckingEnabled = false
     textView.isAutomaticSpellingCorrectionEnabled = false

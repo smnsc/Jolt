@@ -93,6 +93,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       AppModel.shared.shortcutErrorMessage = error.userFacingMessage
     }
     AppModel.shared.start()
+    AppModel.shared.showSearchWindow()
     AppUpdater.shared.start()
   }
 
@@ -113,10 +114,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   {
     // Finish the Dock/Finder reopen event before restoring our policy and window.
     // We handle presentation ourselves, so suppress AppKit's default reopen handling.
-    DispatchQueue.main.async {
-      AppPreferences.shared.applyDockPolicy()
-      AppModel.shared.showSearchWindow()
-    }
+    AppModel.shared.handleReopen()
     return false
   }
 }

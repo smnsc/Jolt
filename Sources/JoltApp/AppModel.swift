@@ -85,6 +85,9 @@ final class AppModel: ObservableObject {
   private var isSettingsPresented = false
   private var activationPolicyTransitionID: UUID?
   private var handlesPendingActivation = false
+  private var pendingSearchPresentation = false
+  private var suppressActivationPresentation = false
+  private var presentationGeneration = 0
   private var displayedJQL: String?
   private var searchGeneration = 0
   private var searchCache: [SearchCacheKey: SearchCacheEntry] = [:]
@@ -477,9 +480,9 @@ final class AppModel: ObservableObject {
       return
     }
     guard let issue = selectedIssue, let url = issueURL(for: issue) else { return }
-    NSWorkspace.shared.open(url)
     dismissActionsMenu()
     hideSearchWindow()
+    NSWorkspace.shared.open(url)
   }
 
   func presentActionsMenu() {
@@ -550,8 +553,8 @@ final class AppModel: ObservableObject {
     )
     components?.queryItems = [URLQueryItem(name: "jql", value: displayedJQL)]
     guard let url = components?.url else { return }
-    NSWorkspace.shared.open(url)
     hideSearchWindow()
+    NSWorkspace.shared.open(url)
   }
 
   func toggleProjectScope(_ project: JiraProject) {
@@ -695,10 +698,27 @@ final class AppModel: ObservableObject {
         NotificationCenter.default.post(name: .focusSearchField, object: nil)
       }
     }
+
+    if pendingSearchPresentation { showSearchWindow() }
+  }
+
+  func handleReopen() {
+    let generation = presentationGeneration
+    DispatchQueue.main.async { [weak self] in
+      guard let self, self.presentationGeneration == generation else { return }
+      self.preferences.applyDockPolicy()
+      self.showSearchWindow()
+    }
   }
 
   func showSearchWindow() {
-    guard let window = resolvedSearchWindow else { return }
+    suppressActivationPresentation = false
+    // Launch activation can precede SwiftUI's WindowAccessor callback.
+    guard let window = searchWindow else {
+      pendingSearchPresentation = true
+      return
+    }
+    pendingSearchPresentation = false
     finishPendingSearchReset()
     searchWindowFocusTask?.cancel()
     dismissActionsMenu()
@@ -720,7 +740,8 @@ final class AppModel: ObservableObject {
       for delay in [50, 100, 200] {
         try? await Task.sleep(for: .milliseconds(delay))
         guard !Task.isCancelled, let self, let window else { return }
-        guard self.searchWindow === window, window.isVisible, NSApp.isActive else { return }
+        guard self.searchWindow === window, window.isVisible else { return }
+        guard NSApp.isActive else { continue }
         guard !window.inLiveResize else { return }
         // Re-order only when activation actually lost the key-window request.
         if !window.isKeyWindow { window.makeKeyAndOrderFront(nil) }
@@ -747,6 +768,11 @@ final class AppModel: ObservableObject {
   }
 
   func hideSearchWindow() {
+    presentationGeneration += 1
+    pendingSearchPresentation = false
+    suppressActivationPresentation = NSApp.isActive
+    // Invalidate the policy callback's captured windows before ordering search out.
+    activationPolicyTransitionID = nil
     searchWindowFocusTask?.cancel()
     guard let window = searchWindow, window.isVisible else { return }
     hiddenSearchWindowFrame = window.frame
@@ -876,7 +902,7 @@ final class AppModel: ObservableObject {
     guard activationPolicyTransitionID == nil else { return }
     let wasHandled = handlesPendingActivation
     handlesPendingActivation = false
-    guard !wasHandled else { return }
+    guard !wasHandled, !suppressActivationPresentation else { return }
     showSearchWindow()
   }
 
@@ -885,6 +911,7 @@ final class AppModel: ObservableObject {
     // Do not let an interrupted explicit activation suppress a later Cmd+Tab return.
     handlesPendingActivation = false
     hideSearchWindow()
+    suppressActivationPresentation = false
   }
 
   func settingsDidClose() {

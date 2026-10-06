@@ -67,6 +67,19 @@ See the [development guide](dev-docs/DEVELOPMENT.md) for Xcode setup, testing, a
 
 Regular and scoped tokens are supported with the Jira read permissions Jolt needs.
 
+#### Why an API key instead of browser sign-in?
+
+An API key (Atlassian calls it an **API token**) lets Jolt connect directly to Jira
+on your behalf. Atlassian’s documented [Jira OAuth 2.0 (3LO) flow](https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/)
+requires an app client secret. A distributed Mac app cannot keep that shared
+secret private. Supporting this flow safely would require a hosted authentication
+service, which Jolt does not have, so Jolt uses a personal API token instead.
+
+Your token is stored in **macOS Keychain** and sent only to Atlassian. Jolt only
+reads Jira data; it does not change issues, even if your token grants broader
+permissions. You can revoke the token at any time in your
+[Atlassian API token settings](https://id.atlassian.com/manage-profile/security/api-tokens).
+
 ### 3. Find your first issue
 
 Press **⌥ J** and search by keyword or issue key. Use **↑ / ↓** to select a result, **Return** to open it in Jira, **→** at the end of the search text to preview it, or **⌥ Return** for copy and open actions.
