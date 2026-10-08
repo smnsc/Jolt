@@ -17,7 +17,8 @@ ACCOUNT = 'co.simonsc.jolt'
 
 
 def run(*args, **kwargs):
-    return subprocess.run([str(a) for a in args], check=True, **kwargs)
+    print(f'Running {Path(str(args[0])).name}...', flush=True)
+    return subprocess.run([str(a) for a in args], check=True, timeout=600, **kwargs)
 
 
 def main():
@@ -35,12 +36,18 @@ def main():
         sys.exit('Refusing to release a different bundle identifier.')
     if info.get('SUFeedURL') != 'https://smnsc.github.io/Jolt/appcast.xml':
         sys.exit('Refusing to release an app using a test update feed.')
-    public_key = run(TOOLS / 'generate_keys', '--account', ACCOUNT, '-p', capture_output=True, text=True).stdout.strip()
-    if public_key != info.get('SUPublicEDKey'):
-        sys.exit('The app public key does not match the signing key in Keychain.')
+    key_file = os.environ.get('SPARKLE_PRIVATE_KEY_FILE')
+    if key_file:
+        run('swift', ROOT / 'scripts/verify-sparkle-key.swift', key_file, info.get('SUPublicEDKey', ''))
+        signing_args = ['--ed-key-file', key_file]
+    else:
+        public_key = run(TOOLS / 'generate_keys', '--account', ACCOUNT, '-p', capture_output=True, text=True).stdout.strip()
+        if public_key != info.get('SUPublicEDKey'):
+            sys.exit('The app public key does not match the signing key in Keychain.')
+        signing_args = ['--account', ACCOUNT]
     feed = ROOT / 'docs/appcast.xml'
     if feed.exists():
-        run(TOOLS / 'sign_update', '--account', ACCOUNT, '--verify', feed)
+        run(TOOLS / 'sign_update', *signing_args, '--verify', feed)
         previous = [int(item.text) for item in ET.parse(feed).iter('{http://www.andymatuschak.org/xml-namespaces/sparkle}version')]
         if previous and int(build) <= max(previous):
             sys.exit('Build number must exceed every previously published build.')
@@ -61,10 +68,10 @@ def main():
     shutil.copy2(notes, updates / f'Jolt-{version}.md')
     if feed.exists():
         shutil.copy2(feed, updates / 'appcast.xml')
-    run(TOOLS / 'generate_appcast', '--account', ACCOUNT, '--maximum-deltas', '0',
+    run(TOOLS / 'generate_appcast', *signing_args, '--maximum-deltas', '0',
         '--download-url-prefix', f'https://github.com/smnsc/Jolt/releases/download/v{version}/',
         '--embed-release-notes', '--link', 'https://smnsc.github.io/Jolt/', updates)
-    run(TOOLS / 'sign_update', '--account', ACCOUNT, '--verify', updates / 'appcast.xml')
+    run(TOOLS / 'sign_update', *signing_args, '--verify', updates / 'appcast.xml')
     shutil.move(updates / archive.name, archive)
     shutil.copy2(updates / 'appcast.xml', output / 'appcast.xml')
     shutil.copy2(notes, output / 'RELEASE_NOTES.md')

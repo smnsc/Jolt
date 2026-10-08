@@ -52,12 +52,12 @@ users to manually install a new build. Export/import options are documented by
    ```
 
 The workflow tests and builds both architectures, uses a timestamp build number,
-imports the secret into the disposable runner's Keychain, and checks its public
-key. It verifies the previous feed, packages and signs the update, uploads a draft,
+passes the secret through a temporary private-key file, and checks its public
+key without Keychain prompts. It verifies the previous feed, packages and signs the update, uploads a draft,
 downloads and checks the assets, then publishes the release and dispatches Pages.
 The run summary records **Jolt build N**. An existing tag or release is never
-replaced. The private-key file is removed even on failure; the Keychain disappears
-with the hosted runner. Release artifacts contain no private key.
+replaced. The private-key file is removed even on failure. Signing tools have ten-minute
+timeouts, the packaging step has a fifteen-minute limit, and the job has a thirty-minute limit. Release artifacts contain no private key.
 
 Each release also stores its signed `appcast.xml`. Pages takes the feed from the
 latest public release, so later website changes preserve it without committing
