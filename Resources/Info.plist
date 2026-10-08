@@ -17,7 +17,7 @@
     <key>SUFeedURL</key>
     <string>https://smnsc.github.io/Jolt/appcast.xml</string>
     <key>SUPublicEDKey</key>
-    <string>Sv6unD2I4m0IAHvCBUc/3N97SVV/ztDt4ImxVrkvZmM=</string>
+    <string>0OOVTyUn5wST9T+9dybjTe0IhNjQhp2puGiDDk9UjrM=</string>
     <key>SUEnableInstallerLauncherService</key>
     <true/>
     <key>SUVerifyUpdateBeforeExtraction</key>
@@ -37,7 +37,7 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.1.0</string>
+    <string>0.1.1</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>LSMinimumSystemVersion</key>
