@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="650" viewBox="0 0 600 650" role="img" aria-labelledby="title desc">
+<title id="title">Click Open Anyway in the final Open Jolt confirmation</title><desc id="desc">An approximation of the final macOS alert, with three stacked buttons: Move to Bin, Open Anyway, and Done. Open Anyway is outlined in blue.</desc>
+<rect width="600" height="650" rx="20" fill="#ececee"/><rect x="55" y="24" width="490" height="570" rx="20" fill="#dcdcdc" stroke="#c9c9cb"/>
+<path d="M288 63 Q300 43 312 63 L349 130 Q360 150 338 150 H262 Q240 150 251 130Z" fill="#efc113" stroke="#f5f5f5" stroke-width="5"/><path d="M300 87v29" stroke="#fff" stroke-width="8" stroke-linecap="round"/><circle cx="300" cy="133" r="5" fill="#fff"/>
+<g font-family="-apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif" fill="#292929" text-anchor="middle">
+<text x="300" y="203" font-size="25" font-weight="700">Open “Jolt”?</text>
+<text font-size="20"><tspan x="300" y="246">Apple is not able to verify that it is free</tspan><tspan x="300" dy="26">from malware that could harm your Mac</tspan><tspan x="300" dy="26">or compromise your privacy. Don’t open</tspan><tspan x="300" dy="26">this unless you are certain it is from a</tspan><tspan x="300" dy="26">trustworthy source.</tspan></text>
+<rect x="81" y="382" width="438" height="49" rx="11" fill="#087fff"/><text x="300" y="414" font-size="23" fill="#fff">Move to Bin</text>
+<rect x="81" y="447" width="438" height="49" rx="11" fill="#c3c3c5"/><rect x="75" y="441" width="450" height="61" rx="16" fill="none" stroke="#0067d9" stroke-width="4"/><text x="300" y="479" font-size="23">Open Anyway</text>
+<rect x="81" y="512" width="438" height="49" rx="11" fill="#c3c3c5"/><text x="300" y="544" font-size="23">Done</text>
+<text x="300" y="625" font-size="17" font-weight="600" fill="#0055b3">3. Click Open Anyway again</text></g></svg>

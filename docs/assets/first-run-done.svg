@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="470" viewBox="0 0 600 470" role="img" aria-labelledby="title desc">
+<title id="title">Click Done in the Jolt Not Opened alert</title><desc id="desc">An approximation of the macOS alert. The Done button at the bottom left is outlined in blue.</desc>
+<defs><linearGradient id="warning" x2="0" y2="1"><stop stop-color="#ffe94a"/><stop offset="1" stop-color="#e5ac00"/></linearGradient></defs>
+<rect width="600" height="470" rx="20" fill="#ececee"/>
+<rect x="55" y="24" width="490" height="390" rx="20" fill="#dcdcdc" stroke="#c9c9cb"/>
+<path d="M288 63 Q300 43 312 63 L349 130 Q360 150 338 150 H262 Q240 150 251 130Z" fill="url(#warning)" stroke="#f5f5f5" stroke-width="5"/>
+<path d="M300 87v29" stroke="#fff" stroke-width="8" stroke-linecap="round"/><circle cx="300" cy="133" r="5" fill="#fff"/>
+<g font-family="-apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif" fill="#292929" text-anchor="middle">
+<text x="300" y="203" font-size="25" font-weight="700">“Jolt” Not Opened</text>
+<text font-size="20"><tspan x="300" y="246">Apple could not verify “Jolt” is free of</tspan><tspan x="300" dy="26">malware that may harm your Mac or</tspan><tspan x="300" dy="26">compromise your privacy.</tspan></text>
+<rect x="81" y="337" width="210" height="49" rx="11" fill="#c3c3c5"/><rect x="309" y="337" width="210" height="49" rx="11" fill="#087fff"/>
+<rect x="75" y="331" width="222" height="61" rx="16" fill="none" stroke="#0067d9" stroke-width="4"/>
+<text x="186" y="369" font-size="23">Done</text><text x="414" y="369" font-size="23" fill="#fff">Move to Bin</text>
+<text x="300" y="446" font-size="17" font-weight="600" fill="#0055b3">1. Click Done</text></g></svg>

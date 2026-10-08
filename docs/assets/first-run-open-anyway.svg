@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="540" viewBox="0 0 800 540" role="img" aria-labelledby="title desc">
+<title id="title">Open Jolt from Privacy and Security</title><desc id="desc">An approximation of System Settings, scrolled to Security. Privacy and Security is selected in the sidebar. The Open Anyway button beside the Jolt blocked message is outlined in blue.</desc>
+<rect width="800" height="540" rx="20" fill="#ececee"/>
+<path d="M20 0H220V540H20Q0 540 0 520V20Q0 0 20 0" fill="#dedee0"/>
+<g font-family="-apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif" fill="#292929">
+<circle cx="28" cy="29" r="7" fill="#ff6058"/><circle cx="51" cy="29" r="7" fill="#ffbd2e"/><circle cx="74" cy="29" r="7" fill="#28c840"/>
+<text x="244" y="40" font-size="24" font-weight="700">Privacy &amp; Security</text><path d="M220 65H800" stroke="#ccc"/>
+<rect x="16" y="77" width="187" height="34" rx="8" fill="#d0d0d2"/><text x="29" y="100" font-size="16" fill="#737377">Search</text>
+<g font-size="16" fill="#505054"><text x="26" y="150">Appearance</text><text x="26" y="191">Control Centre</text><text x="26" y="232">Desktop &amp; Dock</text><text x="26" y="273">Displays</text><text x="26" y="314">Notifications</text><text x="26" y="355">Lock Screen</text></g>
+<rect x="12" y="376" width="196" height="40" rx="7" fill="#087fff"/><text x="24" y="402" font-size="17" fill="#fff">Privacy &amp; Security</text><text x="26" y="449" font-size="16" fill="#505054">Login Password</text>
+<rect x="242" y="87" width="535" height="95" rx="10" fill="#e7e7e9" stroke="#d5d5d7"/><text x="259" y="118" font-size="18">Analytics &amp; Improvements</text><path d="M259 135H760" stroke="#d5d5d7"/><text x="259" y="165" font-size="18">Apple Advertising</text>
+<text x="244" y="224" font-size="20" font-weight="700">Security</text><text x="761" y="222" font-size="14" text-anchor="end" fill="#666">Scroll down to this section ↓</text>
+<rect x="242" y="241" width="535" height="59" rx="10" fill="#e7e7e9" stroke="#d5d5d7"/><text x="259" y="266" font-size="16">Allow applications from</text><text x="259" y="287" font-size="14" fill="#666">App Store &amp; Known Developers</text>
+<rect x="242" y="313" width="535" height="144" rx="10" fill="#e7e7e9" stroke="#d5d5d7"/>
+<text x="259" y="344" font-size="17">“Jolt” was blocked to protect your Mac.</text>
+<rect x="599" y="358" width="160" height="36" rx="9" fill="#fff" stroke="#c6c6c8"/><rect x="593" y="352" width="172" height="48" rx="13" fill="none" stroke="#0067d9" stroke-width="4"/><text x="679" y="382" text-anchor="middle" font-size="19">Open Anyway</text>
+<text x="259" y="424" font-size="14" fill="#666">Apple could not verify “Jolt” is free of malware that may</text><text x="259" y="444" font-size="14" fill="#666">harm your Mac or compromise your privacy.</text>
+<text x="510" y="498" text-anchor="middle" font-size="17" font-weight="600" fill="#0055b3">2. Click Open Anyway</text></g></svg>

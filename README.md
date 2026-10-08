@@ -40,9 +40,7 @@ You’ll need **macOS 14 or later**, a **Jira Cloud account**, and an **Atlassia
 Download a DMG from [GitHub Releases](https://github.com/smnsc/Jolt/releases), open it,
 and drag **Jolt** to **Applications**. If no release is listed yet, build from source below.
 
-Jolt is ad-hoc signed and **not Apple-notarized**. After trying to open it, use
-**System Settings → Privacy & Security → Open Anyway** if macOS blocks it.
-See [Apple’s instructions](https://support.apple.com/en-us/102445).
+Jolt is ad-hoc signed and **not Apple-notarized**. Follow the first-launch guide in Step 2 if macOS blocks it.
 
 Jolt checks for updates automatically. **Settings → Updates** lets you turn checks
 off, enable automatic installation, or check manually. Jira may need reconnecting
@@ -59,7 +57,41 @@ open build/Jolt.app
 
 See the [development guide](dev-docs/DEVELOPMENT.md) for Xcode setup, testing, and release packaging.
 
-### 2. Connect your Jira account
+### 2. Open Jolt for the first time
+
+**macOS blocked Jolt? [See the illustrated first-launch guide on the website](https://smnsc.github.io/Jolt/#mac-permissions)** or expand the images below.
+
+1. Launch **Jolt** from Applications. If you see **“Jolt” Not Opened**, click **Done**.
+2. Open **System Settings → Privacy & Security**, scroll down to **Security**, and click **Open Anyway** beside the Jolt message.
+3. In the final **Open “Jolt”?** alert, click **Open Anyway** again.
+4. When macOS asks for a password, enter your **Mac login password** and confirm. Then connect your Jira account.
+
+Only approve a download you trust. See [Apple’s instructions](https://support.apple.com/en-us/102445).
+
+<details>
+<summary><strong>Show first-launch illustrations — Done → Open Anyway → Confirm</strong></summary>
+
+#### Click Done
+
+![macOS Jolt Not Opened alert with the Done button highlighted](docs/assets/first-run-done.svg)
+
+#### Open System Settings → Privacy & Security, scroll down, and click Open Anyway
+
+![Privacy and Security settings with Open Anyway highlighted beside the Jolt blocked message](docs/assets/first-run-open-anyway.svg)
+
+#### Confirm Open Anyway
+
+![Final Open Jolt confirmation with the middle Open Anyway button highlighted](docs/assets/first-run-confirm.svg)
+
+#### Enter your Mac login password
+
+When macOS asks for a password, enter the password you use to log in to your Mac and confirm.
+
+Illustrations based on macOS prompts; wording may vary by version.
+
+</details>
+
+### 3. Connect your Jira account
 
 1. Create a token in your [Atlassian API token settings](https://id.atlassian.com/manage-profile/security/api-tokens).
 2. Open Jolt and enter your Jira site, such as `your-team.atlassian.net`, and your Atlassian account email.
@@ -80,7 +112,7 @@ reads Jira data; it does not change issues, even if your token grants broader
 permissions. You can revoke the token at any time in your
 [Atlassian API token settings](https://id.atlassian.com/manage-profile/security/api-tokens).
 
-### 3. Find your first issue
+### 4. Find your first issue
 
 Press **⌥ J** and search by keyword or issue key. Use **↑ / ↓** to select a result, **Return** to open it in Jira, **→** at the end of the search text to preview it, or **⌥ Return** for copy and open actions.
 
