@@ -108,6 +108,22 @@ Built with SwiftUI and AppKit. Open `Package.swift` in Xcode to explore the app.
 
 [Development & releases](dev-docs/DEVELOPMENT.md) · [Architecture](dev-docs/ARCHITECTURE.md) · [Search & JQL](dev-docs/SEARCH.md) · [Contributor guide](AGENTS.md)
 
+## Publish a release (maintainers)
+
+After the one-time [GitHub setup](dev-docs/RELEASING.md#one-time-setup), add release
+notes at `dev-docs/releases/0.1.0.md`, commit and push your changes to `main`, then run:
+
+```sh
+scripts/release.sh 0.1.0
+```
+
+Use your next version number. GitHub Actions tests and builds Jolt, signs the
+Sparkle update using `SPARKLE_PRIVATE_KEY` in the `release` environment, creates
+the GitHub Release with downloads, and starts a separate website/update-feed
+deployment. Follow both in the repository’s **Actions** tab. Releases remain
+ad-hoc signed and not Apple-notarized. See the [release guide](dev-docs/RELEASING.md)
+for setup, checks, and recovery.
+
 ## License and support
 
 Jolt is available under the [MIT license](LICENSE). See [third-party notices](THIRD_PARTY_NOTICES.md)

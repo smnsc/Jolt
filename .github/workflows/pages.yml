@@ -1,0 +1,39 @@
+name: Deploy website
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['docs/**', '.github/workflows/pages.yml']
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Load published update feed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          gh release list --limit 1000 --json tagName,isLatest > "$RUNNER_TEMP/releases.json"
+          latest=$(jq -r '.[] | select(.isLatest) | .tagName' "$RUNNER_TEMP/releases.json")
+          if [ -n "$latest" ]; then
+            gh release download "$latest" --pattern appcast.xml --dir "$RUNNER_TEMP/feed"
+            cp "$RUNNER_TEMP/feed/appcast.xml" docs/appcast.xml
+          fi
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

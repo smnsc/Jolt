@@ -8,7 +8,7 @@ Jolt is MIT licensed, ad-hoc signed, and not Apple-notarized. Its public identit
 
 1. Make `smnsc/Jolt` public after reviewing the repository and its history.
 2. In repository Settings → Pages, choose **GitHub Actions** as the source.
-3. Create a public `smnsc/homebrew-tap` repository with a `Casks/` directory.
+3. Optionally create a public `smnsc/homebrew-tap` repository with a `Casks/` directory.
 4. Back up the Sparkle signing key from Keychain to secure offline storage. The
    account is `co.simonsc.jolt`. Never commit or paste the private key into a chat.
    Only `SUPublicEDKey` in `Resources/Info.plist` belongs in source control.
@@ -20,11 +20,71 @@ for an already released app. Without Developer ID, losing the update key require
 users to manually install a new build. Export/import options are documented by
 `generate_keys --help`; keep any backup outside this repository.
 
-## Prepare a release on your Mac
+5. In **Settings → Environments → release**, add the environment secret
+   `SPARKLE_PRIVATE_KEY`. Its value must be the exact text exported by Sparkle's
+   `generate_keys --account co.simonsc.jolt -x /secure/path/key` (not the public
+   key or a second base64 encoding). The workflow checks it against the app's
+   public key. Restrict this environment to `main`; required reviewers are optional.
+6. Push `.github/workflows/release.yml` and `pages.yml` to `main`. In **Settings →
+   Actions → General**, allow Actions to run. The workflows request the required
+   token permissions; no personal access token secret is needed.
+7. Install GitHub CLI (`brew install gh`) and authenticate once with `gh auth login`.
 
-1. Run `swift test` (see DEVELOPMENT.md for the Xcode/cache fallback).
+## Automated release (recommended)
+
+1. Add reviewed notes to `dev-docs/releases/VERSION.md`. Update the default version
+   in `Resources/Info.plist` for subsequent development builds.
+2. Commit and push to `main`, then run from a clean checkout matching remote main:
+
+   ```sh
+   scripts/release.sh 0.1.0
+   ```
+
+   Substitute a new `MAJOR.MINOR.PATCH` version greater than the latest release.
+   This publishes a public release. Alternatively, use **Actions → Release → Run
+   workflow**, select `main`, and enter the version.
+3. Follow **Actions → Release**, approve the environment if you configured required
+   reviewers, then follow **Deploy website**. Terminal status commands:
+
+   ```sh
+   gh run list --workflow release.yml
+   gh run list --workflow pages.yml
+   ```
+
+The workflow tests and builds both architectures, uses a timestamp build number,
+imports the secret into the disposable runner's Keychain, and checks its public
+key. It verifies the previous feed, packages and signs the update, uploads a draft,
+downloads and checks the assets, then publishes the release and dispatches Pages.
+The run summary records **Jolt build N**. An existing tag or release is never
+replaced. The private-key file is removed even on failure; the Keychain disappears
+with the hosted runner. Release artifacts contain no private key.
+
+Each release also stores its signed `appcast.xml`. Pages takes the feed from the
+latest public release, so later website changes preserve it without committing
+generated feeds. Keep previous releases and assets. If an older manually published
+release exists, attach its authentic signed `appcast.xml` before using automation.
+Do not hand-edit the feed. Homebrew tap publication remains a separate optional step.
+
+If publishing fails, inspect the draft and the saved Actions artifact before
+retrying; a draft reserves its version. Delete a failed, **unpublished** draft/tag
+only after checking that no public release used it. Never replace public assets.
+If the release succeeds but Pages fails, fix its settings and retry just deployment:
+
+```sh
+gh workflow run pages.yml --ref main
+```
+
+After both workflows succeed, download the DMG through the website, check its
+checksum and first launch, and test an update from an older install. Hosted tests
+cannot verify Jira login, Gatekeeper interaction, or updater install/relaunch.
+
+## Prepare a release on your Mac (manual alternative)
+
+1. Run `scripts/test.sh` (selects Xcode and uses local build caches).
 2. Build with `MARKETING_VERSION=0.1.0 scripts/build-app.sh`, substituting the new
-   release version. The build number increments locally; if using another Mac,
+   release version (`MAJOR.MINOR.PATCH`, without leading zeros). Update the default
+   in `Resources/Info.plist` for subsequent development builds. Settings shows
+   `MAJOR.MINOR.PATCH+build.N`. The build number increments locally; if using another Mac,
    set `BUILD_NUMBER` greater than the highest published number. Record the exact
    **Jolt build N** printed by the script.
 3. Test the packaged app: launch, connection, search, preferences, login item,
@@ -53,17 +113,18 @@ until the matching release downloads exist. Never modify a signed feed by hand.
 2. Create a GitHub Release for that tag. Upload `Jolt-0.1.0.dmg`,
    `Jolt-0.1.0.zip`, and `SHA256SUMS`, and use `RELEASE_NOTES.md` as its notes.
    Download the uploaded ZIP and verify its checksum before continuing.
-3. Copy the generated `appcast.xml` into `docs/appcast.xml`, commit and push.
-   The Pages workflow deploys it with the site. Verify the live feed and perform
-   an update from the previous installed version. Retain previous release assets.
+3. Attach the generated signed `appcast.xml` to the release, mark the release as
+   latest, then run `gh workflow run pages.yml --ref main`. Verify the live feed
+   and perform an update from the previous installed version. Retain previous assets.
 4. Copy generated `jolt.rb` into `smnsc/homebrew-tap/Casks/jolt.rb`, then run
    `brew style` and a fresh `brew install --cask smnsc/tap/jolt` before advertising
    Homebrew installation. The cask declares `auto_updates true`; Homebrew normally
    skips these during upgrades unless `--greedy` is used.
 
-No private signing key is needed in GitHub Actions: build/sign on the maintainer's
-Mac, upload the finished artifacts, and let Pages serve the signed feed unchanged.
-The CI workflow runs tests and builds but does not publish or sign update archives.
+For manual publishing, also attach the signed `appcast.xml` to the GitHub Release
+and run `gh workflow run pages.yml --ref main`. Pages uses that release asset as
+the authoritative feed. The separate Test workflow never receives the release
+secret; only the manually triggered Release workflow signs and publishes.
 
 ## User-visible constraints
 

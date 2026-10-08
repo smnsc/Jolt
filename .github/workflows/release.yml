@@ -1,0 +1,91 @@
+name: Release
+run-name: Release Jolt ${{ inputs.version }}
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (MAJOR.MINOR.PATCH, for example 0.1.0)'
+        required: true
+        type: string
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: jolt-release
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: macos-26
+    environment: release
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate release and load previous feed
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || { echo 'Invalid version'; exit 1; }
+          test -s "dev-docs/releases/$VERSION.md"
+          git fetch --tags
+          if git rev-parse "refs/tags/v$VERSION" >/dev/null 2>&1; then
+            echo 'This tag already exists. Release versions are immutable.'; exit 1
+          fi
+          # A failed draft also reserves its version; never replace its assets.
+          gh release list --limit 1000 --json tagName,isLatest > "$RUNNER_TEMP/releases.json"
+          if jq -e --arg tag "v$VERSION" 'any(.[]; .tagName == $tag)' "$RUNNER_TEMP/releases.json" >/dev/null; then
+            echo 'This release already exists; inspect it before retrying.'; exit 1
+          fi
+          latest=$(jq -r '.[] | select(.isLatest) | .tagName' "$RUNNER_TEMP/releases.json")
+          if [[ -n "$latest" ]]; then
+            python3 -c 'import sys; parse=lambda s: tuple(map(int, s.removeprefix("v").split("."))); sys.exit(0 if parse(sys.argv[1]) > parse(sys.argv[2]) else "Version must exceed the latest release")' "$VERSION" "$latest"
+            gh release download "$latest" --pattern appcast.xml --dir "$RUNNER_TEMP/previous"
+            cp "$RUNNER_TEMP/previous/appcast.xml" docs/appcast.xml
+          fi
+          # Wall-clock numbers keep hosted builds ahead of local counters.
+          echo "BUILD_NUMBER=$(date +%s)" >> "$GITHUB_ENV"
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+      - name: Test
+        run: scripts/test.sh
+      - name: Build universal app
+        env:
+          MARKETING_VERSION: ${{ inputs.version }}
+        run: scripts/build-app.sh
+      - name: Import update key and prepare release
+        shell: bash
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SPARKLE_PRIVATE_KEY" || { echo 'Missing release environment secret SPARKLE_PRIVATE_KEY'; exit 1; }
+          umask 077
+          key_file="$RUNNER_TEMP/sparkle-private-key"
+          trap 'rm -f "$key_file"' EXIT
+          printf '%s' "$SPARKLE_PRIVATE_KEY" > "$key_file"
+          build/SwiftPM/artifacts/sparkle/Sparkle/bin/generate_keys --account co.simonsc.jolt -f "$key_file"
+          unset SPARKLE_PRIVATE_KEY
+          scripts/prepare-release.py "dev-docs/releases/$VERSION.md"
+      - name: Preserve release files for recovery
+        uses: actions/upload-artifact@v4
+        with:
+          name: Jolt-${{ inputs.version }}
+          path: build/releases/v${{ inputs.version }}/
+      - name: Upload draft and verify downloads before publishing
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="build/releases/v$VERSION"
+          gh release create "v$VERSION" --target "$GITHUB_SHA" --draft \
+            --title "Jolt $VERSION" --notes-file "$output/RELEASE_NOTES.md" \
+            "$output/Jolt-$VERSION.dmg" "$output/Jolt-$VERSION.zip" \
+            "$output/SHA256SUMS" "$output/appcast.xml" "$output/jolt.rb"
+          gh release download "v$VERSION" --dir "$RUNNER_TEMP/download-check"
+          (cd "$RUNNER_TEMP/download-check" && shasum -a 256 -c SHA256SUMS)
+          cmp "$output/appcast.xml" "$RUNNER_TEMP/download-check/appcast.xml"
+          gh release edit "v$VERSION" --draft=false --latest
+          echo "Published Jolt $VERSION — Jolt build $BUILD_NUMBER" >> "$GITHUB_STEP_SUMMARY"
+      - name: Deploy website and update feed
+        run: gh workflow run pages.yml --ref main
