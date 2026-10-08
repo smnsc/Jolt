@@ -645,10 +645,8 @@ final class AppModel: ObservableObject {
     searchWindow.standardWindowButton(.zoomButton)?.isHidden = true
     searchWindow.standardWindowButton(.miniaturizeButton)?.isHidden = true
 
-    searchWindow.contentView?.wantsLayer = true
-    searchWindow.contentView?.layer?.cornerRadius = 18
-    searchWindow.contentView?.layer?.cornerCurve = .continuous
-    searchWindow.contentView?.layer?.masksToBounds = true
+    // Let the titled window's native frame own corner clipping. A separate content-layer
+    // radius can cut transparent slivers inside the system border (notably on Sequoia).
 
     positionAtCenterOfActiveScreen(searchWindow)
 

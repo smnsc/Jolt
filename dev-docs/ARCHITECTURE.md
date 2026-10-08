@@ -28,6 +28,8 @@ AppModel (@MainActor) <---- SearchView / SettingsView / SearchField
 
 The search window uses custom, draggable chrome but remains a native, resizable titled window underneath so it can become key after being dismissed and restored. Minimization is disabled, including Command-M. `AppModel` owns its fixed 640 × 400 minimum size; a flexible root container isolates the scene’s size constraints from changing results and preview content so they cannot raise the window minimum. `AppModel` also owns showing, hiding, and resetting it to its default horizontally centered frame, with 40% of spare vertical space above it; restoration defers first-responder focus until the window is key.
 
+The native window frame owns corner clipping; do not add a separate content-layer radius, which can leave transparent slivers inside the system border on macOS Sequoia.
+
 Search opts out of saved-window restoration and specifies a 800 × 500 launch placement on macOS 15 and later; macOS 14 retains the native initial-frame setup. Manual resizing is retained within the current run.
 
 Display configuration changes recenter search on its current screen using the same raised center, without resetting its size. The hidden-window frame is refreshed and pending focus retries are cancelled so reopening cannot restore coordinates from the previous resolution.
