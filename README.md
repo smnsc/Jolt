@@ -21,13 +21,13 @@
 
 Press **⌥ J**, type what you need, and get back to work. Jolt brings Jira Cloud search to your desktop with autocomplete, quick previews, and shortcuts that keep your hands on the keyboard.
 
-## Why Jolt?
+## Features
 
-- **Find issues from anywhere.** Bring up search with a global shortcut, just like Spotlight.
-- **Search without writing JQL.** Combine words with projects, issue types, assignees, and reporters. Autocomplete helps you find the right match.
-- **Preview without switching apps.** Read an issue’s description right in Jolt, or open it in Jira for the full picture.
-- **Share in a few keystrokes.** Copy an issue’s key and title, or a rich link ready to paste into apps like Microsoft Teams.
-- **Make it feel at home.** Choose your shortcut, appearance, and window size. Keep Jolt in the menu bar or Dock, and launch it at login.
+- **One shortcut away** — Press **⌥ J** or set your own global shortcut to open Jolt, use **↑ / ↓** to select a result, and press **Return** to open it in Jira
+- **Flexible keyboard-driven search** — Combine keywords with `@project`, `#type`, `~assignee`, and `>reporter`, with autocomplete as you type. Use `#bug` or `#epic` to narrow by issue type, or toggle projects and issue types in the filter bar directly below the main text field
+- **Customisable appearance** — Choose light, dark, or system appearance and adjust background transparency from clear through tinted to opaque
+- **Quick actions menu** — Press **⌥ Return** to copy an issue’s key and title, copy an HTML-formatted link, or open the issue in Jira
+- **Lightweight issue previews** — Press **→** at the end of your search text to read the selected issue’s description, including headings, lists, links, and code blocks
 
 Jolt is **read-only**: it searches your issues without changing them. Your API token and connection details are stored in **macOS Keychain**.
 
