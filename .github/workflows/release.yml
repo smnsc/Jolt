@@ -42,8 +42,7 @@ jobs:
           latest=$(jq -r '.[] | select(.isLatest) | .tagName' "$RUNNER_TEMP/releases.json")
           if [[ -n "$latest" ]]; then
             python3 -c 'import sys; parse=lambda s: tuple(map(int, s.removeprefix("v").split("."))); sys.exit(0 if parse(sys.argv[1]) > parse(sys.argv[2]) else "Version must exceed the latest release")' "$VERSION" "$latest"
-            gh release download "$latest" --pattern appcast.xml --dir "$RUNNER_TEMP/previous"
-            cp "$RUNNER_TEMP/previous/appcast.xml" docs/appcast.xml
+            test -s docs/appcast.xml || { echo "Missing committed update feed; restore it before releasing."; exit 1; }
           fi
           # Wall-clock numbers keep hosted builds ahead of local counters.
           echo "BUILD_NUMBER=$(date +%s)" >> "$GITHUB_ENV"
@@ -82,12 +81,24 @@ jobs:
           output="build/releases/v$VERSION"
           gh release create "v$VERSION" --target "$GITHUB_SHA" --draft \
             --title "Jolt $VERSION" --notes-file "$output/RELEASE_NOTES.md" \
-            "$output/Jolt-$VERSION.dmg" "$output/Jolt-$VERSION.zip" \
-            "$output/SHA256SUMS" "$output/appcast.xml" "$output/jolt.rb"
+            "$output/Jolt-$VERSION.dmg" "$output/Jolt-$VERSION.zip"
           gh release download "v$VERSION" --dir "$RUNNER_TEMP/download-check"
+          cp "$output/SHA256SUMS" "$RUNNER_TEMP/download-check/SHA256SUMS"
           (cd "$RUNNER_TEMP/download-check" && shasum -a 256 -c SHA256SUMS)
-          cmp "$output/appcast.xml" "$RUNNER_TEMP/download-check/appcast.xml"
           gh release edit "v$VERSION" --draft=false --latest
           echo "Published Jolt $VERSION — Jolt build $BUILD_NUMBER" >> "$GITHUB_STEP_SUMMARY"
+      - name: Commit signed feed after publishing downloads
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          site_dir="$RUNNER_TEMP/release-site"
+          git worktree add --detach "$site_dir" origin/main
+          cp "build/releases/v$VERSION/appcast.xml" "$site_dir/docs/appcast.xml"
+          git -C "$site_dir" config user.name 'github-actions[bot]'
+          git -C "$site_dir" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C "$site_dir" add docs/appcast.xml
+          git -C "$site_dir" commit -m "Publish update feed for Jolt $VERSION"
+          git -C "$site_dir" push origin HEAD:main
       - name: Deploy website and update feed
         run: gh workflow run pages.yml --ref main

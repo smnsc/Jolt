@@ -59,16 +59,26 @@ The run summary records **Jolt build N**. An existing tag or release is never
 replaced. The private-key file is removed even on failure. Signing tools have ten-minute
 timeouts, the packaging step has a fifteen-minute limit, and the job has a thirty-minute limit. Release artifacts contain no private key.
 
-Each release also stores its signed `appcast.xml`. Pages takes the feed from the
-latest public release, so later website changes preserve it without committing
-generated feeds. Keep previous releases and assets. If an older manually published
-release exists, attach its authentic signed `appcast.xml` before using automation.
-Do not hand-edit the feed. Homebrew tap publication remains a separate optional step.
+Only the DMG and update ZIP are attached to public releases. Checksums and the
+optional Homebrew cask stay in the recovery artifact. After verifying and publishing
+the downloads, the workflow commits the signed feed unchanged to `docs/appcast.xml`
+on `main`, then explicitly dispatches Pages. Repository rules must allow this bot
+commit; if branch protection blocks it, commit the feed manually as described below.
+Pages uses the committed feed to set both HTML download buttons to the matching DMG
+automatically. Never edit the signed XML by hand. Keep previous app downloads.
+
+When migrating from the old workflow, preserve the latest release's signed feed in
+`docs/appcast.xml`, push these workflow changes, and deploy the website first. Then
+remove only `appcast.xml`, `SHA256SUMS`, and `jolt.rb` from the old release attachments.
+Do not remove the ZIP: existing Sparkle feeds reference it.
 
 If publishing fails, inspect the draft and the saved Actions artifact before
 retrying; a draft reserves its version. Delete a failed, **unpublished** draft/tag
 only after checking that no public release used it. Never replace public assets.
-If the release succeeds but Pages fails, fix its settings and retry just deployment:
+If the release publishes but committing the feed fails, download the saved Actions
+artifact, copy its `appcast.xml` unchanged into `docs/appcast.xml`, and commit/push it
+to `main`. Do not rerun the release or rebuild its downloads. If the feed commit
+succeeded but Pages failed, fix its settings and retry just deployment:
 
 ```sh
 gh workflow run pages.yml --ref main
@@ -111,20 +121,18 @@ until the matching release downloads exist. Never modify a signed feed by hand.
 
 1. Commit and push the reviewed source; create a matching `v0.1.0` Git tag.
 2. Create a GitHub Release for that tag. Upload `Jolt-0.1.0.dmg`,
-   `Jolt-0.1.0.zip`, and `SHA256SUMS`, and use `RELEASE_NOTES.md` as its notes.
+   `Jolt-0.1.0.zip`, and use `RELEASE_NOTES.md` as its notes. Keep `SHA256SUMS` locally.
    Download the uploaded ZIP and verify its checksum before continuing.
-3. Attach the generated signed `appcast.xml` to the release, mark the release as
-   latest, then run `gh workflow run pages.yml --ref main`. Verify the live feed
+3. Copy the generated signed `appcast.xml` into `docs/appcast.xml`, commit and push
+   to `main`, then run `gh workflow run pages.yml --ref main`. Verify the live feed
    and perform an update from the previous installed version. Retain previous assets.
 4. Copy generated `jolt.rb` into `smnsc/homebrew-tap/Casks/jolt.rb`, then run
    `brew style` and a fresh `brew install --cask smnsc/tap/jolt` before advertising
    Homebrew installation. The cask declares `auto_updates true`; Homebrew normally
    skips these during upgrades unless `--greedy` is used.
 
-For manual publishing, also attach the signed `appcast.xml` to the GitHub Release
-and run `gh workflow run pages.yml --ref main`. Pages uses that release asset as
-the authoritative feed. The separate Test workflow never receives the release
-secret; only the manually triggered Release workflow signs and publishes.
+The separate Test workflow never receives the release secret; only the manually
+triggered Release workflow signs and publishes.
 
 ## User-visible constraints
 

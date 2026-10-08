@@ -119,8 +119,9 @@ scripts/release.sh 0.1.0
 
 Use your next version number. GitHub Actions tests and builds Jolt, signs the
 Sparkle update using `SPARKLE_PRIVATE_KEY` in the `release` environment, creates
-the GitHub Release with downloads, and starts a separate website/update-feed
-deployment. Follow both in the repository’s **Actions** tab. Releases remain
+the GitHub Release with DMG and update ZIP downloads, commits the signed feed to
+`docs/appcast.xml`, and starts website deployment. Download buttons automatically
+link to the matching DMG; no manual HTML edits are needed. Follow both in the repository’s **Actions** tab. Releases remain
 ad-hoc signed and not Apple-notarized. See the [release guide](dev-docs/RELEASING.md)
 for setup, checks, and recovery.
 

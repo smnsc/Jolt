@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['docs/**', '.github/workflows/pages.yml']
+    paths: ['docs/**', 'scripts/update-download-links.py', '.github/workflows/pages.yml']
 permissions:
   contents: read
   pages: write
@@ -19,17 +19,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v6
-      - name: Load published update feed
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -eu
-          gh release list --limit 1000 --json tagName,isLatest > "$RUNNER_TEMP/releases.json"
-          latest=$(jq -r '.[] | select(.isLatest) | .tagName' "$RUNNER_TEMP/releases.json")
-          if [ -n "$latest" ]; then
-            gh release download "$latest" --pattern appcast.xml --dir "$RUNNER_TEMP/feed"
-            cp "$RUNNER_TEMP/feed/appcast.xml" docs/appcast.xml
-          fi
+      - name: Set direct download links from the published feed
+        run: python3 scripts/update-download-links.py
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

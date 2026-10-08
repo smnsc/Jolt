@@ -1,0 +1,39 @@
+<?xml version="1.0" standalone="yes"?><!-- sparkle-sign-warning:
+IMPORTANT: This file was signed by Sparkle. Any modifications to this file requires re-signing this file with generate_appcast or sign_update! The signed signature will be embedded at the end of this file.
+--><rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Jolt</title>
+        <item>
+            <title>0.1.0</title>
+            <pubDate>Thu, 08 Oct 2026 08:21:30 +0000</pubDate>
+            <link>https://smnsc.github.io/Jolt/</link>
+            <sparkle:version>1791447534</sparkle:version>
+            <sparkle:shortVersionString>0.1.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description sparkle:format="markdown"><![CDATA[# Jolt 0.1.0
+
+Your Jira issues. One shortcut away.
+
+- Native Jira Cloud search with a configurable global shortcut.
+- Project, issue type, assignee, and reporter shortcuts with autocomplete.
+- Issue previews and quick copy/open actions.
+- Automatic update checks, optional automatic installation, and manual checks.
+- Optional support through Ko-fi. Free and open source under the MIT license.
+
+Requires macOS 14 or later. Universal build for Apple Silicon and Intel.
+
+Jolt is not Apple-notarized. If macOS blocks the app, attempt to open it, then use
+System Settings → Privacy & Security → Open Anyway. Move Jolt to Applications
+before running it or using the updater.
+
+You may need to reconnect Jira after updates. Existing development builds using
+the old bundle identifier start with fresh preferences; disable their launch-at-login
+setting before replacing them.
+]]></description>
+            <enclosure url="https://github.com/smnsc/Jolt/releases/download/v0.1.0/Jolt-0.1.0.zip" length="4640523" type="application/octet-stream" sparkle:edSignature="VQAqilAE4Exy+mhBJObtbDYBJ/dCY+WGcriiP8+2tXXMkSiikBQXKQBiQHyby9PN9ZIxon99XdTFAE1I0wrZDQ=="></enclosure>
+        </item>
+    </channel>
+</rss><!-- sparkle-signatures:
+edSignature: Vs935CpKYj7LA9zVOeGbgQHK4pUfRjlsAiwxEU4x8qiq77DinQY86t2d9lhUnpy5BgOJnCiBAyJCWow2YfI+DQ==
+length: 2040
+-->
