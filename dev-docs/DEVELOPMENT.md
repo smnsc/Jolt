@@ -14,17 +14,15 @@ No developer-owned Jira credentials belong in the repository. The app collects c
 Run the core suite from the repository root:
 
 ```sh
-swift test
+scripts/test.sh
 ```
 
-If an agent sandbox reports SwiftPM cache permissions, `sandbox-exec`, or a Command Line Tools SDK/compiler mismatch while Xcode is installed, keep all generated state in the ignored `build/` directory and select Xcode explicitly:
-
-```sh
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
-SWIFTPM_MODULECACHE_OVERRIDE="$PWD/build/TestModuleCache" \
-CLANG_MODULE_CACHE_PATH="$PWD/build/TestModuleCache" \
-swift test --disable-sandbox --scratch-path "$PWD/build/TestSwiftPM"
-```
+The script selects the installed Xcode toolchain when `DEVELOPER_DIR` is unset,
+keeps generated caches and build products in ignored `build/`, and disables the
+nested SwiftPM sandbox for agent compatibility. Additional Swift test arguments
+are forwarded, for example `scripts/test.sh --filter SearchParserTests`.
+Plain `swift test` also works with a correctly selected toolchain; if it reports
+an SDK/compiler mismatch from Command Line Tools, use the script above.
 
 Open `Package.swift` in Xcode and run the `Jolt` scheme for application behavior. Useful manual checks after app-layer changes are:
 
