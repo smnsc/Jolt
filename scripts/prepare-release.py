@@ -29,8 +29,8 @@ def main():
     with (APP / 'Contents/Info.plist').open('rb') as f:
         info = plistlib.load(f)
     version, build = info['CFBundleShortVersionString'], info['CFBundleVersion']
-    if not re.fullmatch(r'\d+\.\d+\.\d+', version) or not re.fullmatch(r'[1-9]\d*', build):
-        sys.exit('Release version must be X.Y.Z and build must be a positive integer.')
+    if not re.fullmatch(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', version) or not re.fullmatch(r'[1-9][0-9]*', build):
+        sys.exit('Release version must be MAJOR.MINOR.PATCH without leading zeros and build must be a positive integer.')
     if info['CFBundleIdentifier'] != ACCOUNT:
         sys.exit('Refusing to release a different bundle identifier.')
     if info.get('SUFeedURL') != 'https://smnsc.github.io/Jolt/appcast.xml':
@@ -92,7 +92,7 @@ def main():
 end
 '''
     (output / 'jolt.rb').write_text(cask)
-    print(f'Release prepared: {output}\nJolt build {build}\nPublish the release assets before deploying appcast.xml or updating the tap.')
+    print(f'Release prepared: {output}\nVersion {version}+build.{build} (Jolt build {build})\nPublish the release assets before deploying appcast.xml or updating the tap.')
 
 
 if __name__ == '__main__':

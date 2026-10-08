@@ -13,6 +13,14 @@ scratch_path="${output_dir}/SwiftPM"
 module_cache_path="${output_dir}/ModuleCache"
 build_number_path="${output_dir}/.build-number"
 
+# Keep the release version in the bundle template; builds may override it.
+marketing_version="${MARKETING_VERSION-$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "${project_dir}/Resources/Info.plist")}"
+release_version_pattern='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
+if [[ ! "${marketing_version}" =~ ${release_version_pattern} ]]; then
+  print -u2 "MARKETING_VERSION must be MAJOR.MINOR.PATCH with no leading zeros (for example, 0.1.0)."
+  exit 2
+fi
+
 last_build_number=0
 if [[ -r "${build_number_path}" ]]; then
   stored_build_number="$(<"${build_number_path}")"
@@ -33,7 +41,8 @@ if [[ -f "${plist_path}" ]]; then
 fi
 
 if [[ -n "${BUILD_NUMBER:-}" ]]; then
-  if [[ "${BUILD_NUMBER}" != <-> ]] || (( BUILD_NUMBER < 1 )); then
+  build_number_pattern='^[1-9][0-9]*$'
+  if [[ ! "${BUILD_NUMBER}" =~ ${build_number_pattern} ]]; then
     print -u2 "BUILD_NUMBER must be a positive integer."
     exit 2
   fi
@@ -86,7 +95,7 @@ xcrun actool "${project_dir}/Resources/Assets.xcassets" \
 /usr/libexec/PlistBuddy -c "Merge ${asset_info_path}" "${plist_path}"
 
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier ${BUNDLE_IDENTIFIER:-co.simonsc.jolt}" "${plist_path}"
-/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${MARKETING_VERSION:-0.1.0}" "${plist_path}"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${marketing_version}" "${plist_path}"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${build_number}" "${plist_path}"
 
 # Render concrete identifiers: codesign does not expand Xcode build variables.
@@ -119,4 +128,4 @@ if (( build_number > last_build_number )); then
   print -r -- "${build_number}" > "${build_number_path}"
 fi
 
-print "Built ${app_dir} (version ${MARKETING_VERSION:-0.1.0}, build ${build_number})"
+print "Built ${app_dir} — ${marketing_version}+build.${build_number} (Jolt build ${build_number})"

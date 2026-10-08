@@ -302,7 +302,7 @@ struct SettingsView: View {
       title: "Jolt",
       detail: "Read-only Jira Cloud issue search"
     ) {
-      Text("Version \(appVersion) (Build \(appBuildNumber))")
+      Text("Version \(appVersion)")
         .font(.callout)
         .monospacedDigit()
         .foregroundStyle(.secondary)
@@ -315,13 +315,11 @@ struct SettingsView: View {
   }
 
   private var appVersion: String {
-    Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-      ?? "Development"
-  }
-
-  private var appBuildNumber: String {
-    Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
-      ?? "Development"
+    guard let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
+          let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String else {
+      return "Development"
+    }
+    return "\(version)+build.\(build)"
   }
 
   private func refreshCachedByteCount() async {
