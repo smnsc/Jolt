@@ -776,10 +776,8 @@ private struct SearchWindowBackground: View {
   @ViewBuilder
   var body: some View {
     switch mode {
-    case .opaque:
-      Color(nsColor: .windowBackgroundColor)
     case .tinted:
-      HUDBackground()
+      Color(nsColor: .windowBackgroundColor)
     case .clear:
       if #available(macOS 26.0, *) {
         LiquidGlassBackground(style: .regular)
@@ -790,15 +788,6 @@ private struct SearchWindowBackground: View {
   }
 }
 
-private struct HUDBackground: View {
-  var body: some View {
-    HUDVisualEffectBackground()
-      // The HUD material deliberately darkens content behind a light window. Keep its stronger
-      // blur, but lift the surface back toward the active appearance's window background color.
-      .overlay(Color(nsColor: .windowBackgroundColor).opacity(0.34))
-  }
-}
-
 @available(macOS 26.0, *)
 private struct LiquidGlassBackground: View {
   let style: Glass
@@ -806,25 +795,6 @@ private struct LiquidGlassBackground: View {
   var body: some View {
     Color.clear
       .glassEffect(style, in: Rectangle())
-  }
-}
-
-private struct HUDVisualEffectBackground: NSViewRepresentable {
-  func makeNSView(context: Context) -> NSVisualEffectView {
-    let view = NSVisualEffectView()
-    configure(view)
-    return view
-  }
-
-  func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
-    configure(nsView)
-  }
-
-  private func configure(_ view: NSVisualEffectView) {
-    view.material = .hudWindow
-    view.blendingMode = .behindWindow
-    view.state = .active
-    view.isEmphasized = true
   }
 }
 

@@ -441,58 +441,31 @@ private struct ThemePicker: View {
   @Binding var selection: AppearanceMode
 
   var body: some View {
-    SettingsMenuPicker(
-      title: "Theme",
-      selection: $selection,
-      options: AppearanceMode.allCases,
-      optionTitle: { $0 == .automatic ? "System" : $0.title }
-    )
+    Picker("Theme", selection: $selection) {
+      ForEach(AppearanceMode.allCases) { mode in
+        Text(mode.title).tag(mode)
+      }
+    }
+    .pickerStyle(.segmented)
+    .labelsHidden()
+    .controlSize(.small)
+    .frame(width: 210)
   }
 }
 
 private struct BackgroundPicker: View {
   @Binding var selection: BackgroundMode
-  private let modes: [BackgroundMode] = [.clear, .tinted, .opaque]
 
   var body: some View {
-    VStack(spacing: 3) {
-      Slider(value: sliderValue, in: 0...2, step: 1)
-        .frame(width: 190)
-        .accessibilityLabel("Background")
-        .accessibilityValue(selection.title)
-
-      ZStack {
-        HStack {
-          modeButton(.clear)
-          Spacer()
-          modeButton(.opaque)
-        }
-        modeButton(.tinted)
+    Picker("Background transparency", selection: $selection) {
+      ForEach(BackgroundMode.allCases) { mode in
+        Text(mode.title).tag(mode)
       }
-      .frame(width: 190)
     }
-  }
-
-  private var sliderValue: Binding<Double> {
-    Binding(
-      get: {
-        Double(modes.firstIndex(of: selection) ?? 1)
-      },
-      set: { value in
-        let index = min(max(Int(value.rounded()), 0), modes.count - 1)
-        selection = modes[index]
-      }
-    )
-  }
-
-  private func modeButton(_ mode: BackgroundMode) -> some View {
-    Button(mode.title) {
-      selection = mode
-    }
-    .buttonStyle(.plain)
-    .font(.caption.weight(selection == mode ? .semibold : .regular))
-    .foregroundStyle(selection == mode ? Color.primary : Color.secondary)
-    .accessibilityAddTraits(selection == mode ? .isSelected : [])
+    .pickerStyle(.segmented)
+    .labelsHidden()
+    .controlSize(.small)
+    .frame(width: 140)
   }
 }
 

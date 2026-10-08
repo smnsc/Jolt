@@ -25,7 +25,7 @@ Press **⌥ J**, type what you need, and get back to work. Jolt brings Jira Clou
 
 - **One shortcut away** — Press **⌥ J** or set your own global shortcut to open Jolt, use **↑ / ↓** to select a result, and press **Return** to open it in Jira
 - **Flexible keyboard-driven search** — Combine keywords with `@project`, `#type`, `~assignee`, and `>reporter`, with autocomplete as you type. Use `#bug` or `#epic` to narrow by issue type, or toggle projects and issue types in the filter bar directly below the main text field
-- **Customisable appearance** — Choose light, dark, or system appearance and adjust background transparency from clear through tinted to opaque
+- **Customisable appearance** — Choose light, dark, or system appearance and choose a clear or tinted background
 - **Quick actions menu** — Press **⌥ Return** to copy an issue’s key and title, copy an HTML-formatted link, or open the issue in Jira
 - **Lightweight issue previews** — Press **→** at the end of your search text to read the selected issue’s description, including headings, lists, links, and code blocks
 

@@ -12,7 +12,7 @@ enum AppearanceMode: String, Codable, CaseIterable, Identifiable {
 
   var id: String { rawValue }
 
-  var title: String { rawValue.capitalized }
+  var title: String { self == .automatic ? "System" : rawValue.capitalized }
 
   var systemImage: String {
     switch self {
@@ -32,19 +32,17 @@ enum AppearanceMode: String, Codable, CaseIterable, Identifiable {
 }
 
 enum BackgroundMode: String, Codable, CaseIterable, Identifiable {
-  case opaque
-  case tinted
   case clear
+  // Keep the previous opaque value so existing preferences retain this appearance.
+  case tinted = "opaque"
 
   var id: String { rawValue }
 
-  var title: String { rawValue.capitalized }
+  var title: String { self == .clear ? "Clear" : "Tinted" }
 
   static func restoring(_ storedValue: String) -> BackgroundMode {
     switch storedValue {
-    case opaque.rawValue, "solid": return .opaque
-    case tinted.rawValue, "hud": return .tinted
-    case clear.rawValue, "liquidGlassRegular", "liquidGlassClear": return .clear
+    case "clear", "liquidGlassRegular", "liquidGlassClear": return .clear
     default: return .tinted
     }
   }
