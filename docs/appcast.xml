@@ -1,65 +1,45 @@
-<?xml version="1.0" standalone="yes"?>
-<!-- sparkle-sign-warning:
+<?xml version="1.0" standalone="yes"?><!-- sparkle-sign-warning:
 IMPORTANT: This file was signed by Sparkle. Any modifications to this file requires re-signing this file with generate_appcast or sign_update! The signed signature will be embedded at the end of this file.
--->
-<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+--><rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
     <channel>
         <title>Jolt</title>
         <item>
-            <title>0.1.1</title>
-            <pubDate>Thu, 08 Oct 2026 08:48:23 +0000</pubDate>
+            <title>0.1.2</title>
+            <pubDate>Fri, 09 Oct 2026 13:46:39 +0000</pubDate>
             <link>https://smnsc.github.io/Jolt/</link>
-            <sparkle:version>1791449100</sparkle:version>
-            <sparkle:shortVersionString>0.1.1</sparkle:shortVersionString>
+            <sparkle:version>116</sparkle:version>
+            <sparkle:shortVersionString>0.1.2</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description sparkle:format="markdown"><![CDATA[# Jolt 0.1.1
+            <description sparkle:format="markdown"><![CDATA[# Jolt 0.1.2
 
-This maintenance release streamlines downloads and update publishing.
+This release improves update preferences and fixes website download links.
 
-- Website download buttons link directly to the Mac installer.
-- Release downloads contain the DMG installer and the ZIP used for automatic updates.
-- The signed Sparkle update feed is published with the website.
+- Choose when to check for updates: On Launch, Daily, Monthly (every 30 days), or Never. Daily remains the default, and manual checks are always available.
+- Automatic download and installation are disabled, including previously enabled preferences. Updates require your confirmation.
+- Website download buttons refresh from the release feed before deployment, even when uploaded HTML wraps or reorders their attributes.
+- Build numbering returns to short, sequential numbers, starting with build 116.
 
-Requires macOS 14 or later. Universal build for Apple Silicon and Intel.
+## One-time manual installation
 
-Jolt is not Apple-notarized. If macOS blocks the app, attempt to open it, then use
-System Settings → Privacy & Security → Open Anyway. Move Jolt to Applications
-before running it or using the updater. You may need to reconnect Jira after updating.
-]]></description>
-            <enclosure url="https://github.com/smnsc/Jolt/releases/download/v0.1.1/Jolt-0.1.1.zip" length="4640519" type="application/octet-stream" sparkle:edSignature="iD4S1ONk7X/0dutjSXEx3uQj/dMZ2IUHQC7S2mZot8n0TJsA3ZdyfY0jQ1aRWUHECFFlJHdwQ/ejl8E87dLMCQ=="/>
-        </item>
-        <item>
-            <title>0.1.0</title>
-            <pubDate>Thu, 08 Oct 2026 08:21:30 +0000</pubDate>
-            <link>https://smnsc.github.io/Jolt/</link>
-            <sparkle:version>1791447534</sparkle:version>
-            <sparkle:shortVersionString>0.1.0</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description sparkle:format="markdown"><![CDATA[# Jolt 0.1.0
+Existing installations with timestamp build numbers, such as 1791449100, cannot
+automatically update to build 116. Download Jolt 0.1.2 from
+[the website](https://smnsc.github.io/Jolt/), quit Jolt, open the DMG, and replace
+Jolt in Applications. Launch the replacement app and confirm Settings shows
+version 0.1.2+build.116.
 
-Your Jira issues. One shortcut away.
-
-- Native Jira Cloud search with a configurable global shortcut.
-- Project, issue type, assignee, and reporter shortcuts with autocomplete.
-- Issue previews and quick copy/open actions.
-- Automatic update checks, optional automatic installation, and manual checks.
-- Optional support through Ko-fi. Free and open source under the MIT license.
+After this one-time installation, future updates can be offered normally according
+to your chosen update-check frequency. You may need to reconnect Jira.
 
 Requires macOS 14 or later. Universal build for Apple Silicon and Intel.
 
 Jolt is not Apple-notarized. If macOS blocks the app, attempt to open it, then use
 System Settings → Privacy & Security → Open Anyway. Move Jolt to Applications
 before running it or using the updater.
-
-You may need to reconnect Jira after updates. Existing development builds using
-the old bundle identifier start with fresh preferences; disable their launch-at-login
-setting before replacing them.
 ]]></description>
-            <enclosure url="https://github.com/smnsc/Jolt/releases/download/v0.1.0/Jolt-0.1.0.zip" length="4640523" type="application/octet-stream" sparkle:edSignature="VQAqilAE4Exy+mhBJObtbDYBJ/dCY+WGcriiP8+2tXXMkSiikBQXKQBiQHyby9PN9ZIxon99XdTFAE1I0wrZDQ=="/>
+            <enclosure url="https://github.com/smnsc/Jolt/releases/download/v0.1.2/Jolt-0.1.2.zip" length="4637111" type="application/octet-stream" sparkle:edSignature="Lx2sUAV3VVkoWu2EadF7ww/M2MjCrnZhvRt4siAaqXZpW3QExBehyBIhtvdOT7n0aNoVcKeSmvcBmbEBLJSWAQ=="></enclosure>
         </item>
     </channel>
-</rss>
-<!-- sparkle-signatures:
-edSignature: DLABqQNQRsfM96gu15phVtUe/A59PySi2xp0mO6ltq1dG7askdkEHRYVHiX4Cy6x8vlGQNBW+CJerzriHoMXCw==
-length: 3389
+</rss><!-- sparkle-signatures:
+edSignature: 4QbvwlZQvmHl00j4j8fYiCWu+LtQIdvjJPZbPbsCuZHZMoO1OOwzxvy/J2vbr8+5sNYV7aeHzx4dEXn7PE6wAQ==
+length: 2546
 -->
