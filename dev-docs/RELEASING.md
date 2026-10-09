@@ -65,7 +65,11 @@ the downloads, the workflow commits the signed feed unchanged to `docs/appcast.x
 on `main`, then explicitly dispatches Pages. Repository rules must allow this bot
 commit; if branch protection blocks it, commit the feed manually as described below.
 Pages uses the committed feed to set both HTML download buttons to the matching DMG
-automatically. Never edit the signed XML by hand. Keep previous app downloads.
+automatically before every website deployment, including HTML uploads to `main`.
+Keep `data-jolt-download` on each download anchor; attribute order and line wrapping
+are supported. Deployment fails if no marked links are found. To refresh a page
+locally before uploading, run `python3 scripts/update-download-links.py`.
+Never edit the signed XML by hand. Keep previous app downloads.
 
 When migrating from the old workflow, preserve the latest release's signed feed in
 `docs/appcast.xml`, push these workflow changes, and deploy the website first. Then
