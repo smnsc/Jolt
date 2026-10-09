@@ -11,45 +11,10 @@ plist_path="${contents_dir}/Info.plist"
 asset_info_path="${output_dir}/AppIconInfo.plist"
 scratch_path="${output_dir}/SwiftPM"
 module_cache_path="${output_dir}/ModuleCache"
-build_number_path="${output_dir}/.build-number"
-
-# Keep the release version in the bundle template; builds may override it.
-marketing_version="${MARKETING_VERSION-$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "${project_dir}/Resources/Info.plist")}"
-release_version_pattern='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
-if [[ ! "${marketing_version}" =~ ${release_version_pattern} ]]; then
-  print -u2 "MARKETING_VERSION must be MAJOR.MINOR.PATCH with no leading zeros (for example, 0.1.0)."
-  exit 2
-fi
-
-last_build_number=0
-if [[ -r "${build_number_path}" ]]; then
-  stored_build_number="$(<"${build_number_path}")"
-  if [[ "${stored_build_number}" == <-> ]]; then
-    last_build_number="${stored_build_number}"
-  fi
-fi
-
-# Recover the counter from the current app if the state file was removed while
-# leaving the built product in place.
-if [[ -f "${plist_path}" ]]; then
-  bundled_build_number="$(
-    /usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "${plist_path}" 2>/dev/null || true
-  )"
-  if [[ "${bundled_build_number}" == <-> ]] && (( bundled_build_number > last_build_number )); then
-    last_build_number="${bundled_build_number}"
-  fi
-fi
-
-if [[ -n "${BUILD_NUMBER:-}" ]]; then
-  build_number_pattern='^[1-9][0-9]*$'
-  if [[ ! "${BUILD_NUMBER}" =~ ${build_number_pattern} ]]; then
-    print -u2 "BUILD_NUMBER must be a positive integer."
-    exit 2
-  fi
-  build_number="${BUILD_NUMBER}"
-else
-  build_number="$(( last_build_number + 1 ))"
-fi
+# Version identity is tracked with the source, never inferred from build output.
+source "${script_dir}/version.sh"
+marketing_version="${jolt_version}"
+build_number="${jolt_build}"
 
 if [[ -z "${DEVELOPER_DIR:-}" && -d "/Applications/Xcode.app/Contents/Developer" ]]; then
   export DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer"
@@ -123,9 +88,5 @@ codesign "${signing_args[@]}" "${contents_dir}/Frameworks/Sparkle.framework"
 codesign "${signing_args[@]}" --entitlements "${entitlements_path}" \
   --identifier "${BUNDLE_IDENTIFIER:-co.simonsc.jolt}" "${app_dir}"
 codesign --verify --deep --strict --verbose=2 "${app_dir}"
-
-if (( build_number > last_build_number )); then
-  print -r -- "${build_number}" > "${build_number_path}"
-fi
 
 print "Built ${app_dir} — ${marketing_version}+build.${build_number} (Jolt build ${build_number})"

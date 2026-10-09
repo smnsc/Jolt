@@ -76,6 +76,10 @@ def main():
     version, build = info['CFBundleShortVersionString'], info['CFBundleVersion']
     if not re.fullmatch(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', version) or not re.fullmatch(r'[1-9][0-9]*', build):
         sys.exit('Release version must be MAJOR.MINOR.PATCH without leading zeros and build must be a positive integer.')
+    with (ROOT / 'Resources/Info.plist').open('rb') as f:
+        tracked_info = plistlib.load(f)
+    if (version, build) != (tracked_info['CFBundleShortVersionString'], tracked_info['CFBundleVersion']):
+        sys.exit('Built app version does not match Resources/Info.plist. Rebuild before preparing a release.')
     if info['CFBundleIdentifier'] != ACCOUNT:
         sys.exit('Refusing to release a different bundle identifier.')
     if info.get('SUFeedURL') != 'https://smnsc.github.io/Jolt/appcast.xml':

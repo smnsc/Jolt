@@ -32,8 +32,9 @@ users to manually install a new build. Export/import options are documented by
 
 ## Automated release (recommended)
 
-1. Add reviewed notes to `dev-docs/releases/VERSION.md`. Update the default version
-   in `Resources/Info.plist` for subsequent development builds.
+1. Add reviewed notes to `dev-docs/releases/VERSION.md`. Set `CFBundleShortVersionString`
+   and `CFBundleVersion` in `Resources/Info.plist` to the release version and a build
+   number greater than every published build.
 2. Commit and push to `main`, then run from a clean checkout matching remote main:
 
    ```sh
@@ -41,7 +42,8 @@ users to manually install a new build. Export/import options are documented by
    ```
 
    Supply a new `MAJOR.MINOR.PATCH` version greater than the latest release and its
-   explicit positive-integer build number.
+   explicit positive-integer build number. Both must match the committed
+   `Resources/Info.plist`; inputs cannot override it.
    This publishes a public release. Alternatively, use **Actions → Release → Run
    workflow**, select `main`, and enter the version and build number.
 3. Follow **Actions → Release**, approve the environment if you configured required
@@ -52,7 +54,7 @@ users to manually install a new build. Export/import options are documented by
    gh run list --workflow pages.yml
    ```
 
-The workflow tests and builds both architectures, uses the supplied build number,
+The workflow tests and builds both architectures, uses the committed version and build number,
 passes the secret through a temporary private-key file, and checks its public
 key without Keychain prompts. It verifies the previous feed, packages and signs the update, uploads a draft,
 downloads and checks the assets, then publishes the release and dispatches Pages.
@@ -108,12 +110,10 @@ The release and test workflows run these checks too.
 ## Prepare a release on your Mac (manual alternative)
 
 1. Run `scripts/test.sh` (selects Xcode and uses local build caches).
-2. Build with `MARKETING_VERSION=0.1.0 scripts/build-app.sh`, substituting the new
-   release version (`MAJOR.MINOR.PATCH`, without leading zeros). Update the default
-   in `Resources/Info.plist` for subsequent development builds. Settings shows
-   `MAJOR.MINOR.PATCH+build.N`. The build number increments locally; if using another Mac,
-   set `BUILD_NUMBER` greater than the highest published number. Record the exact
-   **Jolt build N** printed by the script.
+2. Set and commit the new version and build number in `Resources/Info.plist`, then
+   run `scripts/build-app.sh`. The build number must exceed every published build.
+   Settings shows `MAJOR.MINOR.PATCH (build N)`. Rebuilds retain the tracked number.
+   Record the exact **Jolt build N** printed by the script.
 3. Test the packaged app: launch, connection, search, preferences, login item,
    donation link, update settings, and Check for Updates. Test macOS 14 and Intel
    on suitable hardware before claiming those configurations verified.

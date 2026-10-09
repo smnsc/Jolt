@@ -45,33 +45,29 @@ Build an ad-hoc signed universal app:
 scripts/build-app.sh
 ```
 
-The result is `build/Jolt.app`. The script builds arm64 and x86_64, compiles the asset catalog, applies bundle version values, signs, and verifies the app. Each successful local build increments the previous build number by one. The
-last successful number is saved in `build/.build-number`; the final output reports the version and build number. Settings displays the semantic version as `Version 0.1.0+build.N`.
+The result is `build/Jolt.app`. The script builds arm64 and x86_64, compiles the asset catalog, signs, and verifies the app.
 
-The release version defaults to `CFBundleShortVersionString` in `Resources/Info.plist`,
-with an optional `MARKETING_VERSION` override. Use `MAJOR.MINOR.PATCH` with no leading
-zeros: increment patch for fixes, minor for compatible features, and major for
-incompatible changes once stable. While on `0.x`, minor releases may introduce
-incompatible changes. The automatically increasing build number is appended as
-SemVer build metadata (`+build.N`); it does not change semantic version precedence.
-The bundle retains separate numeric `CFBundleVersion` and `MAJOR.MINOR.PATCH`
-`CFBundleShortVersionString` values for macOS and Sparkle. Sparkle orders updates by
-the build counter, which must keep increasing across release versions. Release tags
-and download filenames use the base version; publish a new patch version for a
-replacement release. Prerelease labels and custom build metadata are not accepted
-by the release build pipeline.
+`Resources/Info.plist` is the source-controlled authority for both
+`CFBundleShortVersionString` (MAJOR.MINOR.PATCH) and `CFBundleVersion` (a positive
+integer without leading zeros). Settings displays `Version MAJOR.MINOR.PATCH (build N)`;
+Sparkle uses the build number to order updates. Increment the tracked build number
+when preparing a new build for testing or distribution, and commit it with the source.
+Rebuilding the same source preserves its number, even after deleting `build/`.
+The old `build/.build-number` is no longer read or written.
 
-Release signing and an explicit build-number override can be supplied without editing tracked files:
+Every published release must increase both the version and build number. Never
+reuse a published version. `MARKETING_VERSION` and `BUILD_NUMBER`, if supplied,
+must match the tracked values; they cannot override them. Release requests are
+checked against the committed plist, including direct GitHub workflow dispatches.
+
+Optional signing settings remain available:
 
 ```sh
-BUNDLE_IDENTIFIER=co.simonsc.jolt \
-MARKETING_VERSION=0.1.0 \
-BUILD_NUMBER=1 \
-SIGNING_IDENTITY="Developer ID Application: Example (TEAMID)" \
-scripts/build-app.sh
+SIGNING_IDENTITY="Developer ID Application: Example (TEAMID)" scripts/build-app.sh
 ```
 
-Omit `BUILD_NUMBER` for normal development builds so the counter advances automatically. After any successful app build, include the reported `Jolt build N` in the user-facing completion message.
+After any successful app build, include the reported **Jolt build N** in the
+completion message.
 
 Package the existing app as `build/Jolt.dmg`:
 

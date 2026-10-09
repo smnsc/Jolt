@@ -13,7 +13,7 @@
   <a href="https://smnsc.github.io/Jolt/">Website</a> ·
   <a href="#get-started">Get started</a> ·
   <a href="#search-your-way">Search guide</a> ·
-  <a href="dev-docs/DEVELOPMENT.md">Build from source</a> ·
+  <a href="#build-from-source">Build from source</a> ·
   <a href="https://ko-fi.com/simonsc">Support Jolt</a>
 </p>
 
@@ -38,7 +38,7 @@ You’ll need **macOS 14 or later**, a **Jira Cloud account**, and an **Atlassia
 ### 1. Install Jolt
 
 Download a DMG from [GitHub Releases](https://github.com/smnsc/Jolt/releases), open it,
-and drag **Jolt** to **Applications**. If no release is listed yet, build from source below.
+and drag **Jolt** to **Applications**.
 
 Jolt is ad-hoc signed and **not Apple-notarized**. Follow the first-launch guide in Step 2 if macOS blocks it.
 
@@ -46,17 +46,6 @@ Jolt checks for updates daily by default. **Settings → Updates** offers On Lau
 Daily, Monthly (every 30 days), or Never, plus manual checks. Installation requires
 your confirmation. Jira may need reconnecting
 after an update because ad-hoc builds have different Keychain identities.
-
-#### Build from source
-
-With **Xcode 26 or later** installed, run these commands from your checkout:
-
-```sh
-scripts/build-app.sh
-open build/Jolt.app
-```
-
-See the [development guide](dev-docs/DEVELOPMENT.md) for Xcode setup, testing, and release packaging.
 
 ### 2. Open Jolt for the first time
 
@@ -141,7 +130,39 @@ Built with SwiftUI and AppKit. Open `Package.swift` in Xcode to explore the app.
 
 [Development & releases](dev-docs/DEVELOPMENT.md) · [Architecture](dev-docs/ARCHITECTURE.md) · [Search & JQL](dev-docs/SEARCH.md) · [Contributor guide](AGENTS.md)
 
-## Publish a release (maintainers)
+### Build from source
+
+With **Xcode 26 or later** installed, run these commands from your checkout:
+
+```sh
+scripts/build-app.sh
+open build/Jolt.app
+```
+
+The version and build number come from the tracked `Resources/Info.plist`.
+Rebuilding keeps those values, even after deleting `build/`.
+Before making a new numbered build, increment the build number:
+
+```sh
+current_build=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" Resources/Info.plist)
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $((current_build + 1))" Resources/Info.plist
+scripts/build-app.sh
+open build/Jolt.app
+```
+
+For a new release, also set the app version before building (replace `X.Y.Z`
+with the intended version):
+
+```sh
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString X.Y.Z" Resources/Info.plist
+```
+
+Commit `Resources/Info.plist` with the corresponding source changes. Published
+releases must use a version and build number greater than every previous release.
+
+See the [development guide](dev-docs/DEVELOPMENT.md) for Xcode setup, testing, and release packaging.
+
+### Publish a release (maintainers)
 
 After the one-time [GitHub setup](dev-docs/RELEASING.md#one-time-setup), add release
 notes at `dev-docs/releases/0.1.2.md`, commit and push your changes to `main`, then run:
@@ -150,7 +171,8 @@ notes at `dev-docs/releases/0.1.2.md`, commit and push your changes to `main`, t
 scripts/release.sh 0.1.2 116
 ```
 
-Supply the release version and its explicit positive-integer build number. GitHub Actions tests and builds Jolt, signs the
+Set the version and build number in `Resources/Info.plist` before committing.
+Supply those same values to the release command. GitHub Actions tests and builds Jolt, signs the
 Sparkle update using `SPARKLE_PRIVATE_KEY` in the `release` environment, creates
 the GitHub Release with DMG and update ZIP downloads, commits the signed feed to
 `docs/appcast.xml`, and starts website deployment. Download buttons automatically

@@ -316,7 +316,7 @@ struct SettingsView: View {
           let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String else {
       return "Development"
     }
-    return "\(version)+build.\(build)"
+    return "\(version) (build \(build))"
   }
 
   private func refreshCachedByteCount() async {

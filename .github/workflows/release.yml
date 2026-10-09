@@ -35,6 +35,9 @@ jobs:
           set -euo pipefail
           [[ "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || { echo 'Invalid version'; exit 1; }
           [[ "$BUILD_NUMBER" =~ ^[1-9][0-9]*$ ]] || { echo 'Build number must be a positive integer without leading zeros'; exit 1; }
+          project_dir="$PWD"
+          MARKETING_VERSION="$VERSION"
+          source scripts/version.sh
           test -s "dev-docs/releases/$VERSION.md"
           git fetch --tags
           if git rev-parse "refs/tags/v$VERSION" >/dev/null 2>&1; then
