@@ -45,13 +45,15 @@ Build an ad-hoc signed universal app:
 scripts/build-app.sh
 ```
 
-The result is `build/Jolt.app`. The script builds arm64 and x86_64, compiles the asset catalog, applies bundle version values, signs, and verifies the app. Each successful local build automatically increments the lightweight counter in `build/.build-number`; the final output reports the version and build number. Settings displays the semantic version as `Version 0.1.0+build.N`.
+The result is `build/Jolt.app`. The script builds arm64 and x86_64, compiles the asset catalog, applies bundle version values, signs, and verifies the app. Each successful local build uses the current Unix timestamp, matching release
+build numbering, or the previous local number plus one if that is greater. The
+last successful number is saved in `build/.build-number`; the final output reports the version and build number. Settings displays the semantic version as `Version 0.1.0+build.N`.
 
 The release version defaults to `CFBundleShortVersionString` in `Resources/Info.plist`,
 with an optional `MARKETING_VERSION` override. Use `MAJOR.MINOR.PATCH` with no leading
 zeros: increment patch for fixes, minor for compatible features, and major for
 incompatible changes once stable. While on `0.x`, minor releases may introduce
-incompatible changes. The automatically increasing build counter is appended as
+incompatible changes. The automatically increasing build number is appended as
 SemVer build metadata (`+build.N`); it does not change semantic version precedence.
 The bundle retains separate numeric `CFBundleVersion` and `MAJOR.MINOR.PATCH`
 `CFBundleShortVersionString` values for macOS and Sparkle. Sparkle orders updates by
