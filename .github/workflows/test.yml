@@ -10,6 +10,8 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
+      - name: Test release numbering rules
+        run: python3 scripts/test-prepare-release.py
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
       - run: swift test

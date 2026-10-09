@@ -21,6 +21,50 @@ def run(*args, **kwargs):
     return subprocess.run([str(a) for a in args], check=True, timeout=600, **kwargs)
 
 
+SPARKLE = '{http://www.andymatuschak.org/xml-namespaces/sparkle}'
+
+
+def feed_versions(feed):
+    items = ET.parse(feed).findall('./channel/item')
+    if not items:
+        raise ValueError('Update feed must contain at least one release.')
+    releases = []
+    for item in items:
+        version = item.findtext(SPARKLE + 'shortVersionString', '')
+        build = item.findtext(SPARKLE + 'version', '')
+        if not re.fullmatch(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', version) or not re.fullmatch(r'[1-9][0-9]*', build):
+            raise ValueError('Invalid version or build number in update feed.')
+        releases.append((tuple(map(int, version.split('.'))), int(build)))
+    return releases
+
+
+def requires_feed_reset(feed, version, build):
+    """Allow only the agreed 0.1.1 timestamp -> 0.1.2/build 116 reset."""
+    if not feed.exists():
+        return False
+    previous = feed_versions(feed)
+    candidate = tuple(map(int, version.split('.')))
+    if candidate <= max(v for v, _ in previous):
+        raise ValueError('Release version must exceed every version in the previous feed.')
+    reset = (
+        version == '0.1.2' and int(build) == 116
+        and max(previous) == ((0, 1, 1), 1791449100)
+        and max(b for _, b in previous) == 1791449100
+    )
+    if not reset and int(build) <= max(b for _, b in previous):
+        raise ValueError('Build number must exceed every previously published build.')
+    return reset
+
+
+def validate_generated_feed(feed, version, build, reset):
+    releases = feed_versions(feed)
+    expected = (tuple(map(int, version.split('.'))), int(build))
+    if expected not in releases or max(b for _, b in releases) != int(build):
+        raise ValueError('Generated feed does not select the requested release build.')
+    if reset and releases != [expected]:
+        raise ValueError('Reset feed must contain only the new release.')
+
+
 def main():
     if len(sys.argv) != 2:
         sys.exit('Usage: scripts/prepare-release.py RELEASE_NOTES.md')
@@ -48,9 +92,9 @@ def main():
     feed = ROOT / 'docs/appcast.xml'
     if feed.exists():
         run(TOOLS / 'sign_update', *signing_args, '--verify', feed)
-        previous = [int(item.text) for item in ET.parse(feed).iter('{http://www.andymatuschak.org/xml-namespaces/sparkle}version')]
-        if previous and int(build) <= max(previous):
-            sys.exit('Build number must exceed every previously published build.')
+    reset_feed = requires_feed_reset(feed, version, build)
+    if reset_feed:
+        print('Resetting update numbering for 0.1.2/build 116; existing timestamp builds require manual installation.')
     output = ROOT / 'build/releases' / f'v{version}'
     if output.exists():
         sys.exit(f'{output} already exists; keep published releases immutable. Use a new version or move an unpublished staging folder aside.')
@@ -66,12 +110,14 @@ def main():
     updates.mkdir()
     shutil.move(archive, updates / archive.name)
     shutil.copy2(notes, updates / f'Jolt-{version}.md')
-    if feed.exists():
+    # Start a fresh feed for the reset; never modify the previous signed XML.
+    if feed.exists() and not reset_feed:
         shutil.copy2(feed, updates / 'appcast.xml')
     run(TOOLS / 'generate_appcast', *signing_args, '--maximum-deltas', '0',
         '--download-url-prefix', f'https://github.com/smnsc/Jolt/releases/download/v{version}/',
         '--embed-release-notes', '--link', 'https://smnsc.github.io/Jolt/', updates)
     run(TOOLS / 'sign_update', *signing_args, '--verify', updates / 'appcast.xml')
+    validate_generated_feed(updates / 'appcast.xml', version, build, reset_feed)
     shutil.move(updates / archive.name, archive)
     shutil.copy2(updates / 'appcast.xml', output / 'appcast.xml')
     shutil.copy2(notes, output / 'RELEASE_NOTES.md')

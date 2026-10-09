@@ -144,13 +144,13 @@ Built with SwiftUI and AppKit. Open `Package.swift` in Xcode to explore the app.
 ## Publish a release (maintainers)
 
 After the one-time [GitHub setup](dev-docs/RELEASING.md#one-time-setup), add release
-notes at `dev-docs/releases/0.1.0.md`, commit and push your changes to `main`, then run:
+notes at `dev-docs/releases/0.1.2.md`, commit and push your changes to `main`, then run:
 
 ```sh
-scripts/release.sh 0.1.0
+scripts/release.sh 0.1.2 116
 ```
 
-Use your next version number. GitHub Actions tests and builds Jolt, signs the
+Supply the release version and its explicit positive-integer build number. GitHub Actions tests and builds Jolt, signs the
 Sparkle update using `SPARKLE_PRIVATE_KEY` in the `release` environment, creates
 the GitHub Release with DMG and update ZIP downloads, commits the signed feed to
 `docs/appcast.xml`, and starts website deployment. Download buttons automatically

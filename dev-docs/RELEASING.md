@@ -37,12 +37,13 @@ users to manually install a new build. Export/import options are documented by
 2. Commit and push to `main`, then run from a clean checkout matching remote main:
 
    ```sh
-   scripts/release.sh 0.1.0
+   scripts/release.sh 0.1.2 116
    ```
 
-   Substitute a new `MAJOR.MINOR.PATCH` version greater than the latest release.
+   Supply a new `MAJOR.MINOR.PATCH` version greater than the latest release and its
+   explicit positive-integer build number.
    This publishes a public release. Alternatively, use **Actions → Release → Run
-   workflow**, select `main`, and enter the version.
+   workflow**, select `main`, and enter the version and build number.
 3. Follow **Actions → Release**, approve the environment if you configured required
    reviewers, then follow **Deploy website**. Terminal status commands:
 
@@ -51,7 +52,7 @@ users to manually install a new build. Export/import options are documented by
    gh run list --workflow pages.yml
    ```
 
-The workflow tests and builds both architectures, uses a timestamp build number,
+The workflow tests and builds both architectures, uses the supplied build number,
 passes the secret through a temporary private-key file, and checks its public
 key without Keychain prompts. It verifies the previous feed, packages and signs the update, uploads a draft,
 downloads and checks the assets, then publishes the release and dispatches Pages.
@@ -91,6 +92,18 @@ gh workflow run pages.yml --ref main
 After both workflows succeed, download the DMG through the website, check its
 checksum and first launch, and test an update from an older install. Hosted tests
 cannot verify Jira login, Gatekeeper interaction, or updater install/relaunch.
+
+## One-time build-number reset in 0.1.2
+
+Release preparation permits exactly 0.1.1/build 1791449100 to transition to
+0.1.2/build 116. It verifies the previous signed feed, then generates and signs a
+fresh feed containing only the new release. It never edits the old signed XML.
+Existing timestamp-numbered installations must download and install 0.1.2 manually.
+Subsequent releases must increase both the app version and build number (for
+example, 0.1.3/build 117). Other decreases remain blocked.
+
+Run `python3 scripts/test-prepare-release.py` for offline checks of these rules.
+The release and test workflows run these checks too.
 
 ## Prepare a release on your Mac (manual alternative)
 
