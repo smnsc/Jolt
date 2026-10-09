@@ -42,8 +42,9 @@ and drag **Jolt** to **Applications**. If no release is listed yet, build from s
 
 Jolt is ad-hoc signed and **not Apple-notarized**. Follow the first-launch guide in Step 2 if macOS blocks it.
 
-Jolt checks for updates automatically. **Settings → Updates** lets you turn checks
-off, enable automatic installation, or check manually. Jira may need reconnecting
+Jolt checks for updates daily by default. **Settings → Updates** offers On Launch,
+Daily, Monthly (every 30 days), or Never, plus manual checks. Installation requires
+your confirmation. Jira may need reconnecting
 after an update because ad-hoc builds have different Keychain identities.
 
 #### Build from source

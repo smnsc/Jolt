@@ -26,6 +26,10 @@
     <true/>
     <key>SUEnableAutomaticChecks</key>
     <true/>
+    <key>SUAllowsAutomaticUpdates</key>
+    <false/>
+    <key>SUScheduledCheckInterval</key>
+    <integer>86400</integer>
     <key>SUAutomaticallyUpdate</key>
     <false/>
     <key>SUSendProfileInfo</key>

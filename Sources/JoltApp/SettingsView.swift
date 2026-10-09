@@ -144,20 +144,17 @@ struct SettingsView: View {
 
         settingsSection("Updates") {
           VStack(spacing: 0) {
-            SettingsRow(title: "Check automatically", detail: "Look for new versions of Jolt each day.") {
-              Toggle("Check automatically", isOn: Binding(
-                get: { updater.automaticallyChecksForUpdates },
-                set: { updater.setAutomaticChecks($0) }
-              )).labelsHidden()
-            }
-            SettingsDivider()
-            SettingsRow(title: "Download and install automatically", detail: "Install downloaded updates when you quit Jolt.") {
-              Toggle("Download and install automatically", isOn: Binding(
-                get: { updater.automaticallyDownloadsUpdates },
-                set: { updater.setAutomaticDownloads($0) }
-              ))
+            SettingsRow(title: "Check for updates", detail: "Choose when Jolt looks for new versions. Monthly checks run every 30 days.") {
+              Picker("Check for updates", selection: Binding(
+                get: { updater.checkFrequency },
+                set: { updater.setCheckFrequency($0) }
+              )) {
+                ForEach(UpdateCheckFrequency.allCases, id: \.self) { frequency in
+                  Text(frequency.title).tag(frequency)
+                }
+              }
               .labelsHidden()
-              .disabled(!updater.automaticallyChecksForUpdates)
+              .frame(width: 140)
             }
             SettingsDivider()
             SettingsRow(title: "Software updates", detail: "You may need to reconnect Jira after an update.") {

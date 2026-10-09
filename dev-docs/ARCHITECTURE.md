@@ -98,9 +98,11 @@ Automated tests cover `JoltCore` parser, JQL, and structured-description decodin
 ## Updates and distribution
 
 `AppUpdater` is a main-actor singleton owning Sparkle's standard updater controller.
-It starts after application launch; menu and Settings actions share it. Sparkle owns
-update preferences and publishes their state to SwiftUI. Checks default to daily;
-automatic download/install is opt-in. Profile reporting is disabled. Update traffic
+It starts after application launch; menu and Settings actions share it. Jolt stores the check frequency and configures Sparkle’s scheduler for Daily
+(the default) or Monthly (30 days). On Launch performs one background check per
+app launch with scheduled checks disabled; Never disables both. Existing disabled
+checks migrate to Never. Manual checks remain available. Automatic download/install
+is disabled in the bundle and at startup. Profile reporting is disabled. Update traffic
 to GitHub is independent of Jira's authenticated URL session.
 
 The host embeds Sparkle's installer service and grants only its two named Mach
