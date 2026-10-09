@@ -1,8 +1,31 @@
-<?xml version="1.0" standalone="yes"?><!-- sparkle-sign-warning:
+<?xml version="1.0" standalone="yes"?>
+<!-- sparkle-sign-warning:
 IMPORTANT: This file was signed by Sparkle. Any modifications to this file requires re-signing this file with generate_appcast or sign_update! The signed signature will be embedded at the end of this file.
---><rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+-->
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
     <channel>
         <title>Jolt</title>
+        <item>
+            <title>0.1.3</title>
+            <pubDate>Fri, 09 Oct 2026 14:26:19 +0000</pubDate>
+            <link>https://smnsc.github.io/Jolt/</link>
+            <sparkle:version>119</sparkle:version>
+            <sparkle:shortVersionString>0.1.3</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description sparkle:format="markdown"><![CDATA[# Jolt 0.1.3
+
+- Settings now displays the version as **Version 0.1.3 (build 119)**.
+- App version and build numbers are tracked with the source, so clearing build files no longer resets numbering. Release builds verify that their version matches the committed source.
+- Developer build and versioning instructions are grouped in the README’s developer section.
+
+Requires macOS 14 or later. Universal build for Apple Silicon and Intel.
+
+Jolt is not Apple-notarized. If macOS blocks the app, attempt to open it, then use
+System Settings → Privacy & Security → Open Anyway. Move Jolt to Applications
+before running it or using the updater. You may need to reconnect Jira after updating.
+]]></description>
+            <enclosure url="https://github.com/smnsc/Jolt/releases/download/v0.1.3/Jolt-0.1.3.zip" length="4637094" type="application/octet-stream" sparkle:edSignature="5Vm2ieDkYT0dzr8v2ctfZK9w2e07aIU4SLbTLIKBGMGGe9IoszNIQnY5tJ6x/mF6r/6ubitDdP6mCTAw0aAHAw=="/>
+        </item>
         <item>
             <title>0.1.2</title>
             <pubDate>Fri, 09 Oct 2026 13:46:39 +0000</pubDate>
@@ -36,10 +59,11 @@ Jolt is not Apple-notarized. If macOS blocks the app, attempt to open it, then u
 System Settings → Privacy & Security → Open Anyway. Move Jolt to Applications
 before running it or using the updater.
 ]]></description>
-            <enclosure url="https://github.com/smnsc/Jolt/releases/download/v0.1.2/Jolt-0.1.2.zip" length="4637111" type="application/octet-stream" sparkle:edSignature="Lx2sUAV3VVkoWu2EadF7ww/M2MjCrnZhvRt4siAaqXZpW3QExBehyBIhtvdOT7n0aNoVcKeSmvcBmbEBLJSWAQ=="></enclosure>
+            <enclosure url="https://github.com/smnsc/Jolt/releases/download/v0.1.2/Jolt-0.1.2.zip" length="4637111" type="application/octet-stream" sparkle:edSignature="Lx2sUAV3VVkoWu2EadF7ww/M2MjCrnZhvRt4siAaqXZpW3QExBehyBIhtvdOT7n0aNoVcKeSmvcBmbEBLJSWAQ=="/>
         </item>
     </channel>
-</rss><!-- sparkle-signatures:
-edSignature: 4QbvwlZQvmHl00j4j8fYiCWu+LtQIdvjJPZbPbsCuZHZMoO1OOwzxvy/J2vbr8+5sNYV7aeHzx4dEXn7PE6wAQ==
-length: 2546
+</rss>
+<!-- sparkle-signatures:
+edSignature: hoWVHZu3EC0sXAJKn1MO6zukbNWwZG+flFnFoZyKOGsSsnIj4B07uSAlsVyHqI0Q7iWpsgyzqNO2GDPpjLxLAA==
+length: 3953
 -->
