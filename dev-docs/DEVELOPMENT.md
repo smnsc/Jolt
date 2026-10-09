@@ -45,8 +45,7 @@ Build an ad-hoc signed universal app:
 scripts/build-app.sh
 ```
 
-The result is `build/Jolt.app`. The script builds arm64 and x86_64, compiles the asset catalog, applies bundle version values, signs, and verifies the app. Each successful local build uses the current Unix timestamp, matching release
-build numbering, or the previous local number plus one if that is greater. The
+The result is `build/Jolt.app`. The script builds arm64 and x86_64, compiles the asset catalog, applies bundle version values, signs, and verifies the app. Each successful local build increments the previous build number by one. The
 last successful number is saved in `build/.build-number`; the final output reports the version and build number. Settings displays the semantic version as `Version 0.1.0+build.N`.
 
 The release version defaults to `CFBundleShortVersionString` in `Resources/Info.plist`,

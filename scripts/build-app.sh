@@ -48,13 +48,7 @@ if [[ -n "${BUILD_NUMBER:-}" ]]; then
   fi
   build_number="${BUILD_NUMBER}"
 else
-  # Match the release workflow's timestamp scale so a newer local build is
-  # not mistaken for an older build by Sparkle. Still advance for rapid builds
-  # or when the clock moves backwards.
-  build_number="$(date +%s)"
-  if (( build_number <= last_build_number )); then
-    build_number="$(( last_build_number + 1 ))"
-  fi
+  build_number="$(( last_build_number + 1 ))"
 fi
 
 if [[ -z "${DEVELOPER_DIR:-}" && -d "/Applications/Xcode.app/Contents/Developer" ]]; then
