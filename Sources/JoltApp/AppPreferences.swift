@@ -194,7 +194,7 @@ final class AppPreferences: ObservableObject {
   private let defaults: UserDefaults
 
   private init(defaults: UserDefaults = .standard) {
-    let storedBackground = defaults.string(forKey: Key.background) ?? ""
+    let storedBackground = defaults.string(forKey: Key.background) ?? BackgroundMode.clear.rawValue
     let restoredBackground = BackgroundMode.restoring(storedBackground)
 
     self.defaults = defaults
