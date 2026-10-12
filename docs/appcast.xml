@@ -6,6 +6,26 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <channel>
         <title>Jolt</title>
         <item>
+            <title>0.1.4</title>
+            <pubDate>Mon, 12 Oct 2026 15:19:47 +0000</pubDate>
+            <link>https://smnsc.github.io/Jolt/</link>
+            <sparkle:version>121</sparkle:version>
+            <sparkle:shortVersionString>0.1.4</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description sparkle:format="markdown"><![CDATA[# Jolt 0.1.4
+
+- Jolt now defaults to a Clear background on first launch. Your saved background choice is preserved when updating.
+- The DMG now includes a compact drag-to-Applications layout with installation instructions and guidance for opening Jolt if macOS blocks it.
+
+Requires macOS 14 or later. Universal build for Apple Silicon and Intel.
+
+Jolt is not Apple-notarized. If macOS blocks the app, attempt to open it, then use
+System Settings → Privacy & Security → Open Anyway. Move Jolt to Applications
+before running it or using the updater. You may need to reconnect Jira after updating.
+]]></description>
+            <enclosure url="https://github.com/smnsc/Jolt/releases/download/v0.1.4/Jolt-0.1.4.zip" length="4636868" type="application/octet-stream" sparkle:edSignature="/WbmBWwLIgYQh0xlZYEoTR48n2NVzFeVTmrjkfPRdpWAQTXTI+qGkof1Uo+ha9hYNWvbMCYT3Bw3Wr4QKGz0CQ=="/>
+        </item>
+        <item>
             <title>0.1.3</title>
             <pubDate>Fri, 09 Oct 2026 14:26:19 +0000</pubDate>
             <link>https://smnsc.github.io/Jolt/</link>
@@ -64,6 +84,6 @@ before running it or using the updater.
     </channel>
 </rss>
 <!-- sparkle-signatures:
-edSignature: hoWVHZu3EC0sXAJKn1MO6zukbNWwZG+flFnFoZyKOGsSsnIj4B07uSAlsVyHqI0Q7iWpsgyzqNO2GDPpjLxLAA==
-length: 3953
+edSignature: NslIgtXv9seaqItwhSfpTkUVhtTFwPRkgmMPH1tHtFsw241csFrrgtYSx+gf9/Nra/6cq1vvGRECBlhNaov4Dw==
+length: 5277
 -->
