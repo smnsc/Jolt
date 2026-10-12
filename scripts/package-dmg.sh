@@ -12,10 +12,30 @@ if [[ ! -d "${app_path}" ]]; then
 fi
 
 staging_path="$(mktemp -d "${project_dir}/build/dmg-stage.XXXXXX")"
-trap 'rm -rf "${staging_path}"' EXIT
-ditto "${app_path}" "${staging_path}/Jolt.app"
-ln -s /Applications "${staging_path}/Applications"
-hdiutil create -volname "Jolt" -srcfolder "${staging_path}" -ov -format UDZO "${dmg_path}"
+mount_path="${staging_path}/mounted"
+mounted=false
+cleanup() {
+  if [[ "${mounted}" == true ]]; then
+    hdiutil detach "${mount_path}" -quiet || return
+  fi
+  rm -rf "${staging_path}"
+}
+trap cleanup EXIT
+mkdir -p "${staging_path}/contents/.background"
+export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
+CLANG_MODULE_CACHE_PATH="${project_dir}/build/dmg-module-cache" \
+  swift "${script_dir}/generate-dmg-background.swift" "${staging_path}/contents/.background/install.tiff"
+contents_path="${staging_path}/contents"
+ditto "${app_path}" "${contents_path}/Jolt.app"
+ln -s /Applications "${contents_path}/Applications"
+hdiutil create -volname "Jolt" -srcfolder "${contents_path}" -format UDRW "${staging_path}/writable.dmg"
+hdiutil attach "${staging_path}/writable.dmg" -mountpoint "${mount_path}" -nobrowse -quiet
+mounted=true
+osascript "${script_dir}/configure-dmg.applescript" "${mount_path}"
+[[ -s "${mount_path}/.DS_Store" ]] || { print -u2 "Finder did not save the DMG layout."; exit 1; }
+hdiutil detach "${mount_path}" -quiet
+mounted=false
+hdiutil convert "${staging_path}/writable.dmg" -format UDZO -o "${dmg_path}" -ov
 
 if [[ -n "${APPLE_ID:-}" && -n "${APPLE_TEAM_ID:-}" && -n "${APPLE_APP_PASSWORD:-}" ]]; then
   xcrun notarytool submit "${dmg_path}" \

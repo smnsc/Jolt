@@ -75,6 +75,15 @@ Package the existing app as `build/Jolt.dmg`:
 scripts/package-dmg.sh
 ```
 
+Packaging generates a compact Retina background with installation and first-launch
+instructions below the Jolt and Applications icons. It mounts a temporary
+writable image and uses Finder to save the window size, background, and icon
+positions before compressing it. Run in a logged-in macOS session with Finder
+available; macOS may request permission for the terminal to control Finder.
+Layout lives in `scripts/configure-dmg.applescript`; artwork and wording live in
+`scripts/generate-dmg-background.swift`. Repackaging an unchanged app preserves
+its build number. Open the final DMG to visually check the layout after changes.
+
 If `APPLE_ID`, `APPLE_TEAM_ID`, and `APPLE_APP_PASSWORD` are all present, the packaging script also submits the DMG for notarization and staples the result. Keep these values in the environment or a local ignored configuration, never in source control.
 
 ## Public distribution
