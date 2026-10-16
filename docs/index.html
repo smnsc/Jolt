@@ -43,43 +43,48 @@
       </div>
       <div class="visual">
         <div class="shortcut"><kbd>⌥</kbd><kbd>J</kbd><span>Your next issue is right here.</span></div>
-        <div class="search-demo" role="img"
-          aria-label="Illustrative dark-mode Jolt window with a plain-text search bar, project and issue-type filter pills, six sample issue rows, status badges, and keyboard shortcuts.">
-          <div class="query"><svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="10" cy="10" r="7" />
-              <path d="m15 15 6 6" />
-            </svg><span class="query-text">Search issues by text, @project, #type, ~assignee, &gt;reporter…</span><span
-              class="window-tool">⊙</span><span class="window-tool">⚙</span></div>
-          <div class="scope"><span>DEV</span><span>User
-              Story</span><span>Epic</span><span>Task</span><span>Bug</span><span>WEB</span></div>
-          <div class="issue selected"><span class="issue-icon story">↑</span>
-            <div><strong>Make project search feel instant</strong><small>DEV-142 · User Story</small></div><span
-              class="status"><i>○</i> Estimation</span>
+        <div class="hero-demo-stage">
+          <div class="search-demo" role="img"
+            aria-label="Illustrative dark-mode Jolt window with a plain-text search bar, project and issue-type filter pills, six sample issue rows, status badges, and keyboard shortcuts.">
+            <div class="query"><svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="10" cy="10" r="7" />
+                <path d="m15 15 6 6" />
+              </svg><span class="query-text">Search issues by text, @project, #type, ~assignee, &gt;reporter…</span><span
+                class="window-tool">⊙</span><span class="window-tool">⚙</span></div>
+            <div class="scope"><span>DEV</span><span>User
+                Story</span><span>Epic</span><span>Task</span><span>Bug</span><span>WEB</span></div>
+            <div class="issue selected"><span class="issue-icon story">↑</span>
+              <div><strong>Make project search feel instant</strong><small>DEV-142 · User Story</small></div><span
+                class="status"><i>○</i> Estimation</span>
+            </div>
+            <div class="issue"><span class="issue-icon epic">ϟ</span>
+              <div><strong>A better onboarding experience</strong><small>WEB-87 · Epic</small></div><span
+                class="status"><i>○</i> To Do</span>
+            </div>
+            <div class="issue"><span class="issue-icon epic">ϟ</span>
+              <div><strong>Bring dark mode to every view</strong><small>DEV-138 · Epic</small></div><span
+                class="status progress"><i>↻</i> In Progress</span>
+            </div>
+            <div class="issue"><span class="issue-icon story">↑</span>
+              <div><strong>Keep your recent projects close</strong><small>DEV-135 · User Story</small></div><span
+                class="status"><i>○</i> To Do</span>
+            </div>
+            <div class="issue"><span class="issue-icon task">✓</span>
+              <div><strong>Polish the keyboard shortcuts</strong><small>DEV-127 · Task</small></div><span
+                class="status done"><i>✓</i> Completed</span>
+            </div>
+            <div class="issue"><span class="issue-icon story">↑</span>
+              <div><strong>Share an issue with your team</strong><small>WEB-82 · User Story</small></div><span
+                class="status done"><i>✓</i> Merged</span>
+            </div>
+            <div class="demo-footer"><span class="mini-bolt">ϟ</span><span>Quick Look Issue <kbd>→</kbd></span><span>Open
+                in Browser <kbd>↵</kbd></span><span>Actions <kbd>⌥ ↵</kbd></span></div>
           </div>
-          <div class="issue"><span class="issue-icon epic">ϟ</span>
-            <div><strong>A better onboarding experience</strong><small>WEB-87 · Epic</small></div><span
-              class="status"><i>○</i> To Do</span>
-          </div>
-          <div class="issue"><span class="issue-icon epic">ϟ</span>
-            <div><strong>Bring dark mode to every view</strong><small>DEV-138 · Epic</small></div><span
-              class="status progress"><i>↻</i> In Progress</span>
-          </div>
-          <div class="issue"><span class="issue-icon story">↑</span>
-            <div><strong>Keep your recent projects close</strong><small>DEV-135 · User Story</small></div><span
-              class="status"><i>○</i> To Do</span>
-          </div>
-          <div class="issue"><span class="issue-icon task">✓</span>
-            <div><strong>Polish the keyboard shortcuts</strong><small>DEV-127 · Task</small></div><span
-              class="status done"><i>✓</i> Completed</span>
-          </div>
-          <div class="issue"><span class="issue-icon story">↑</span>
-            <div><strong>Share an issue with your team</strong><small>WEB-82 · User Story</small></div><span
-              class="status done"><i>✓</i> Merged</span>
-          </div>
-          <div class="demo-footer"><span class="mini-bolt">ϟ</span><span>Quick Look Issue <kbd>→</kbd></span><span>Open
-              in Browser <kbd>↵</kbd></span><span>Actions <kbd>⌥ ↵</kbd></span></div>
         </div>
-        <p class="sample">Jolt in dark mode · Illustrative preview with sample issues</p>
+        <div class="hero-demo-caption">
+          <p class="sample">Simulated demo · Sample issues</p>
+          <button class="hero-demo-toggle" type="button" hidden>Play demo</button>
+        </div>
       </div>
     </section>
     <section class="install wrap" id="install" aria-labelledby="install-heading">
@@ -314,6 +319,7 @@
         href="https://simonsc.co">Made by Simon ↗</a></div>
     <p>Independent project. Not affiliated with Atlassian.</p>
   </footer>
+  <script src="hero-demo.js" defer></script>
 </body>
 
 </html>

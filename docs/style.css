@@ -1480,3 +1480,72 @@ button {
         }
     }
 }
+/* Keep the static illustration in flow so playback never changes hero geometry. */
+.hero-demo-stage { position: relative; }
+.hero-demo-stage [hidden] { display: none !important; }
+.hero-demo-animation {
+    display: none;
+    position: absolute;
+    inset: 0;
+    color: var(--preview-key-text);
+}
+.is-playing-demo > .search-demo:first-child { visibility: hidden; }
+.is-playing-demo .hero-demo-animation { display: block; }
+.hero-demo-animation .demo-footer { position: absolute; bottom: 0; left: 0; right: 0; }
+.hero-demo-animation .has-query { color: var(--preview-key-text); }
+.hero-demo-animation .hero-filter-active {
+    background: var(--preview-selection);
+    border-color: var(--primary);
+    color: var(--preview-key-text);
+}
+.hero-bug { color: #f18291; font-size: 17px; }
+.hero-demo-detail { padding: 20px; }
+.hero-demo-detail small { color: var(--preview-secondary-text); font-size: 11px; }
+.hero-demo-detail small span { float: right; color: var(--primary); font-size: 9px; }
+.hero-demo-detail h3 { margin: 18px 0 12px; font-size: 20px; }
+.hero-demo-detail h4 { margin: 18px 0 10px; font-size: 12px; }
+.hero-demo-detail p { font-size: 12px; line-height: 1.6; margin: 8px 0; }
+.hero-demo-menu {
+    position: absolute;
+    right: 16px;
+    bottom: 85px;
+    width: 220px;
+    padding: 5px;
+    border: 1px solid var(--preview-border);
+    border-radius: 10px;
+    background: var(--preview-background);
+    box-shadow: 0 10px 30px #0006;
+    font-size: 12px;
+}
+.hero-demo-menu div { padding: 10px; border-radius: 5px; }
+.hero-demo-menu .chosen { background: var(--preview-selection); }
+.hero-demo-menu span { float: right; }
+.hero-demo-cue {
+    position: absolute;
+    bottom: 51px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 7px 12px;
+    border: 1px solid var(--preview-border);
+    border-radius: 20px;
+    background: var(--preview-background);
+    color: var(--preview-secondary-text);
+    font-size: 11px;
+    white-space: nowrap;
+}
+.hero-copy-done .hero-demo-cue { color: #8ee3b3; }
+.hero-demo-caption { display: flex; justify-content: flex-end; align-items: center; gap: 16px; min-height: 44px; }
+.hero-demo-caption .sample { margin: 0; }
+.hero-demo-toggle {
+    font-size: 11px;
+    color: var(--ink);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 7px 10px;
+}
+.hero-demo-toggle[hidden] { display: none; }
+@media (max-width: 700px) {
+    .hero-demo-detail { padding: 16px; }
+    .hero-demo-detail h3 { font-size: 17px; }
+}
