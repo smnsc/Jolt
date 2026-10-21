@@ -77,7 +77,9 @@ final class AppModel: ObservableObject {
   private var searchWindowDidResignKeyObserver: NSObjectProtocol?
   private var searchWindowDidBecomeKeyObserver: NSObjectProtocol?
   private var screenParametersObserver: NSObjectProtocol?
+  private var activeSpaceObserver: NSObjectProtocol?
   private var searchWindowFocusTask: Task<Void, Never>?
+  private var applicationSearchPresentationTask: Task<Void, Never>?
   private var searchResetTask: Task<Void, Never>?
   private var searchResetDeadline: Date?
   private weak var settingsWindow: NSWindow?
@@ -87,7 +89,6 @@ final class AppModel: ObservableObject {
   private var handlesPendingActivation = false
   private var pendingSearchPresentation = false
   private var suppressActivationPresentation = false
-  private var presentationGeneration = 0
   private var displayedJQL: String?
   private var searchGeneration = 0
   private var searchCache: [SearchCacheKey: SearchCacheEntry] = [:]
@@ -600,9 +601,7 @@ final class AppModel: ObservableObject {
   func register(searchWindow: NSWindow) {
     let isNewWindow = self.searchWindow !== searchWindow
     self.searchWindow = searchWindow
-    // WindowAccessor is updated whenever SwiftUI refreshes the search view, including after each
-    // keystroke. Reapplying size constraints during those refreshes makes AppKit adjust the frame
-    // repeatedly, which causes the window to drift on screen.
+    // Configure a panel only once; reapplying sizing while typing can move its frame.
     guard isNewWindow else { return }
 
     // Start each run at the default frame rather than restoring old session geometry.
@@ -626,12 +625,18 @@ final class AppModel: ObservableObject {
     if let screenParametersObserver {
       NotificationCenter.default.removeObserver(screenParametersObserver)
     }
+    if let activeSpaceObserver {
+      NSWorkspace.shared.notificationCenter.removeObserver(activeSpaceObserver)
+    }
 
     searchWindow.level = .floating
-    searchWindow.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+    // Present in the invoking Space, including another app's full-screen Space.
+    // This is a transient search surface, not a window replicated across all Spaces.
+    searchWindow.collectionBehavior = [
+      .moveToActiveSpace, .canJoinAllApplications, .fullScreenAuxiliary,
+    ]
     searchWindow.isReleasedWhenClosed = false
-    // SwiftUI's hidden-title-bar window remains titled underneath its custom chrome. Do not
-    // remove that style: borderless windows cannot reliably become key again after orderOut.
+    // Keep the panel titled underneath its custom chrome so the native frame owns clipping.
     // Make the content view occupy the title-bar region as well, so the custom search surface
     // does not leave a title-bar-sized strip below it.
     searchWindow.titleVisibility = .hidden
@@ -649,6 +654,26 @@ final class AppModel: ObservableObject {
     // radius can cut transparent slivers inside the system border (notably on Sequoia).
 
     positionAtCenterOfActiveScreen(searchWindow)
+
+    activeSpaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
+      forName: NSWorkspace.activeSpaceDidChangeNotification,
+      object: nil,
+      queue: .main
+    ) { [weak self] _ in
+      MainActor.assumeIsolated {
+        guard let self else { return }
+        // Dock activation can switch Spaces after the app becomes active. Wait for
+        // that transition rather than treating it as a swipe away from open search.
+        if self.applicationSearchPresentationTask != nil {
+          self.scheduleApplicationSearchPresentation(afterSpaceChange: true)
+          return
+        }
+        guard self.searchWindow?.isVisible == true else { return }
+        // A nonactivating panel can retain key focus in the Space we just left.
+        // Order it out and cancel focus retries so invisible search cannot consume typing.
+        self.hideSearchWindow()
+      }
+    }
 
     screenParametersObserver = NotificationCenter.default.addObserver(
       forName: NSApplication.didChangeScreenParametersNotification,
@@ -681,6 +706,7 @@ final class AppModel: ObservableObject {
       DispatchQueue.main.async { [weak self] in
         guard let self, self.searchWindow?.isKeyWindow != true else { return }
         guard self.activationPolicyTransitionID == nil else { return }
+        guard self.applicationSearchPresentationTask == nil else { return }
         guard !self.isSettingsPresented || !NSApp.isActive else { return }
         self.hideSearchWindow()
       }
@@ -692,7 +718,8 @@ final class AppModel: ObservableObject {
       queue: .main
     ) { [weak searchWindow] _ in
       DispatchQueue.main.async {
-        guard searchWindow?.isKeyWindow == true else { return }
+        guard searchWindow?.isKeyWindow == true, searchWindow?.isOnActiveSpace == true
+        else { return }
         NotificationCenter.default.post(name: .focusSearchField, object: nil)
       }
     }
@@ -701,15 +728,40 @@ final class AppModel: ObservableObject {
   }
 
   func handleReopen() {
-    let generation = presentationGeneration
-    DispatchQueue.main.async { [weak self] in
-      guard let self, self.presentationGeneration == generation else { return }
+    suppressActivationPresentation = false
+    scheduleApplicationSearchPresentation()
+  }
+
+  private func scheduleApplicationSearchPresentation(afterSpaceChange: Bool = false) {
+    // Dock reopen and didBecomeActive describe the same request. Coalesce them
+    // rather than restarting the initial transition guard on every callback.
+    guard applicationSearchPresentationTask == nil || afterSpaceChange else { return }
+    applicationSearchPresentationTask?.cancel()
+    searchWindowFocusTask?.cancel()
+    applicationSearchPresentationTask = Task { [weak self] in
+      // Finish the Dock/Finder event before reapplying the requested Dock policy.
+      await Task.yield()
+      guard !Task.isCancelled, let self else { return }
       self.preferences.applyDockPolicy()
+      do {
+        // Keep the initial guard for a Dock-triggered transition. Once the workspace
+        // reports its new Space, allow a short settling period instead of waiting
+        // another half-second. Subsequent Space changes restart only that short wait.
+        try await Task.sleep(for: .milliseconds(afterSpaceChange ? 75 : 500))
+      } catch { return }
+      guard !Task.isCancelled else { return }
+      self.applicationSearchPresentationTask = nil
+      guard NSApp.isActive else {
+        self.hideSearchWindow()
+        return
+      }
       self.showSearchWindow()
     }
   }
 
   func showSearchWindow() {
+    applicationSearchPresentationTask?.cancel()
+    applicationSearchPresentationTask = nil
     suppressActivationPresentation = false
     // Launch activation can precede SwiftUI's WindowAccessor callback.
     guard let window = searchWindow else {
@@ -720,26 +772,28 @@ final class AppModel: ObservableObject {
     finishPendingSearchReset()
     searchWindowFocusTask?.cancel()
     dismissActionsMenu()
-    // Capture geometry before activation: ordering a SwiftUI window forward can reapply
-    // scene restoration. Keep the user’s frame throughout the activation retry period.
+    // Preserve the user's frame while restoring keyboard focus.
     let frameToRestore = hiddenSearchWindowFrame ?? window.frame
     hiddenSearchWindowFrame = nil
-    activateForExplicitWindowAction()
+    // Recover even if invocation beats the workspace's Space-change notification.
+    // Reordering a key panel left in another Space does not reliably move it.
+    if window.isVisible && !window.isOnActiveSpace { window.orderOut(nil) }
+    // Taking key focus in the nonactivating search panel leaves the invoking app
+    // and its full-screen Space active. Settings still uses explicit app activation.
     window.level = isSettingsPresented ? .normal : .floating
     window.makeKeyAndOrderFront(nil)
     restoreSearchWindowFrame(frameToRestore, in: window)
     focusPrimaryControl(in: window)
 
-    // Activation can finish after this method returns, particularly when invoked from the
-    // menu-bar extra or the global hot key. In that case the first make-key request is lost while
-    // Jolt still appears to be the foreground app. Briefly stabilize key-window and responder
-    // state after the invoking menu/event has unwound.
+    // A menu-bar event can finish after the first make-key request. Briefly stabilize
+    // key-window and responder state without requiring application activation: the panel
+    // intentionally accepts typing while the invoking application remains active.
     searchWindowFocusTask = Task { [weak self, weak window] in
       for delay in [50, 100, 200] {
         try? await Task.sleep(for: .milliseconds(delay))
         guard !Task.isCancelled, let self, let window else { return }
         guard self.searchWindow === window, window.isVisible else { return }
-        guard NSApp.isActive else { continue }
+        guard window.isOnActiveSpace else { return }
         guard !window.inLiveResize else { return }
         // Re-order only when activation actually lost the key-window request.
         if !window.isKeyWindow { window.makeKeyAndOrderFront(nil) }
@@ -751,7 +805,7 @@ final class AppModel: ObservableObject {
 
   func toggleSearchWindow() {
     guard let window = resolvedSearchWindow else { return }
-    if window.isVisible {
+    if window.isVisible && window.isOnActiveSpace {
       hideSearchWindow()
     } else {
       showSearchWindow()
@@ -766,7 +820,8 @@ final class AppModel: ObservableObject {
   }
 
   func hideSearchWindow() {
-    presentationGeneration += 1
+    applicationSearchPresentationTask?.cancel()
+    applicationSearchPresentationTask = nil
     pendingSearchPresentation = false
     suppressActivationPresentation = NSApp.isActive
     // Invalidate the policy callback's captured windows before ordering search out.
@@ -842,6 +897,8 @@ final class AppModel: ObservableObject {
   }
 
   func prepareToOpenSettings() {
+    applicationSearchPresentationTask?.cancel()
+    applicationSearchPresentationTask = nil
     isSettingsPresented = true
     searchWindowFocusTask?.cancel()
     activateForExplicitWindowAction()
@@ -901,13 +958,19 @@ final class AppModel: ObservableObject {
     let wasHandled = handlesPendingActivation
     handlesPendingActivation = false
     guard !wasHandled, !suppressActivationPresentation else { return }
-    showSearchWindow()
+    scheduleApplicationSearchPresentation()
   }
 
   func applicationDidResignActive() {
     guard activationPolicyTransitionID == nil else { return }
     // Do not let an interrupted explicit activation suppress a later Cmd+Tab return.
     handlesPendingActivation = false
+    if applicationSearchPresentationTask != nil {
+      // Full-screen Dock activation can temporarily deactivate Jolt. Keep the pending
+      // request; it will hide instead if another app is active when the wait ends.
+      suppressActivationPresentation = false
+      return
+    }
     hideSearchWindow()
     suppressActivationPresentation = false
   }
@@ -923,12 +986,11 @@ final class AppModel: ObservableObject {
   }
 
   private func enforceSearchWindowSize(_ window: NSWindow) {
-    // SwiftUI applies its hidden-title-bar sizing after the representable resolves. Correct the
-    // outer frame on the following run-loop pass while preserving the window's current center.
+    // Correct initial hosting-view sizing on the following run-loop pass while
+    // preserving the panel's current center.
     DispatchQueue.main.async { [weak window] in
       guard let window else { return }
-      // SwiftUI finishes resolving scene sizing after the accessor first sees the window. Apply
-      // the native constraint again here so both SwiftUI and AppKit agree on the minimum.
+      // Reapply the native constraint after the hosting view finishes its initial layout.
       window.minSize = SearchWindowMetrics.minimumSize
       let targetSize = SearchWindowMetrics.defaultSize
       guard window.frame.size != targetSize else { return }
@@ -985,14 +1047,15 @@ final class AppModel: ObservableObject {
     // Wait until AppKit has finished making the restored window key before SwiftUI/AppKit fields
     // attempt to become first responder.
     DispatchQueue.main.async { [weak window] in
-      guard window?.isKeyWindow == true else { return }
+      guard window?.isKeyWindow == true, window?.isOnActiveSpace == true else { return }
       NotificationCenter.default.post(name: .focusSearchField, object: nil)
     }
   }
 
   private func restoreSearchFieldFocus() {
     DispatchQueue.main.async { [weak searchWindow] in
-      guard searchWindow?.isKeyWindow == true else { return }
+      guard searchWindow?.isKeyWindow == true, searchWindow?.isOnActiveSpace == true
+      else { return }
       NotificationCenter.default.post(name: .focusSearchField, object: nil)
     }
   }

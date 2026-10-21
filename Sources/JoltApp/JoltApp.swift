@@ -9,42 +9,6 @@ struct JoltApp: App {
   @StateObject private var updater = AppUpdater.shared
 
   var body: some Scene {
-    Window("Jolt", id: "search") {
-      // Keep dynamic content's measured minimum from resizing the native window. The
-      // container takes the available space and reports only our fixed minimum to the scene.
-      GeometryReader { _ in
-        SearchView()
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
-      }
-        .frame(
-          minWidth: SearchWindowMetrics.minimumSize.width,
-          minHeight: SearchWindowMetrics.minimumSize.height
-        )
-        .environmentObject(model)
-        .environmentObject(preferences)
-        .environmentObject(model.images)
-        .background(
-          WindowAccessor { window in
-            window.identifier = NSUserInterfaceItemIdentifier("search")
-            model.register(searchWindow: window)
-          }
-        )
-        .onExitCommand { model.handleSearchEscape() }
-    }
-    .defaultSize(
-      width: SearchWindowMetrics.defaultSize.width,
-      height: SearchWindowMetrics.defaultSize.height
-    )
-    .windowResizability(.contentMinSize)
-    .windowStyle(.hiddenTitleBar)
-    .searchWindowLaunchBehavior()
-    .commands {
-      CommandGroup(after: .appInfo) {
-        Button("Check for Updates…") { updater.checkForUpdates() }
-          .disabled(!updater.canCheckForUpdates)
-      }
-    }
-
     MenuBarExtra("Jolt", image: "MenuBarIcon") {
       Button("Search Issues") { model.showSearchWindow() }
       Button("Reset Size and Center") { model.centerSearchWindow() }
@@ -64,6 +28,12 @@ struct JoltApp: App {
         .environmentObject(preferences)
         .environmentObject(updater)
     }
+    .commands {
+      CommandGroup(after: .appInfo) {
+        Button("Check for Updates…") { updater.checkForUpdates() }
+          .disabled(!updater.canCheckForUpdates)
+      }
+    }
   }
 }
 
@@ -81,10 +51,15 @@ private struct SettingsMenuButton: View {
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+  private var searchPanel: SearchPanel?
+
   func applicationDidFinishLaunching(_ notification: Notification) {
     let preferences = AppPreferences.shared
     preferences.applyDockPolicy()
     preferences.applyAppearance()
+    let panel = SearchPanel(model: AppModel.shared, preferences: preferences)
+    searchPanel = panel
+    AppModel.shared.register(searchWindow: panel)
     do {
       try HotKeyService.shared.register(preferences.shortcut) {
         AppModel.shared.toggleSearchWindow()
@@ -137,29 +112,40 @@ struct WindowAccessor: NSViewRepresentable {
   }
 }
 
-private extension Scene {
-  func searchWindowLaunchBehavior() -> some Scene {
-    // SceneBuilder has no buildEither. Use its availability erasure for both OS branches.
-    let scene = {
-      if #available(macOS 15.0, *) {
-        return SceneBuilder.buildLimitedAvailability(
-          self
-            .restorationBehavior(.disabled)
-            .defaultWindowPlacement { _, context in
-              let bounds = context.defaultDisplay.visibleRect
-              let size = SearchWindowMetrics.defaultSize
-              return WindowPlacement(
-                CGPoint(
-                  x: bounds.midX - size.width / 2,
-                  y: bounds.minY + max(0, bounds.height - size.height) * 0.4
-                ),
-                size: size
-              )
-            }
-        )
-      }
-      return SceneBuilder.buildLimitedAvailability(self)
-    }()
-    return SceneBuilder.buildOptional(scene)
+// A nonactivating panel can take keyboard focus while the invoking full-screen app
+// remains active. This style must be set at construction, not toggled on a SwiftUI window.
+@MainActor
+final class SearchPanel: NSPanel {
+  override var canBecomeKey: Bool { true }
+  override var canBecomeMain: Bool { false }
+
+  init(model: AppModel, preferences: AppPreferences) {
+    super.init(
+      contentRect: NSRect(origin: .zero, size: SearchWindowMetrics.defaultSize),
+      styleMask: [.titled, .resizable, .fullSizeContentView, .nonactivatingPanel],
+      backing: .buffered,
+      defer: false
+    )
+    title = "Jolt"
+    identifier = NSUserInterfaceItemIdentifier("search")
+    hidesOnDeactivate = false
+    becomesKeyOnlyIfNeeded = false
+    animationBehavior = .utilityWindow
+    let root = GeometryReader { _ in
+      SearchView()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    .frame(
+      minWidth: SearchWindowMetrics.minimumSize.width,
+      minHeight: SearchWindowMetrics.minimumSize.height
+    )
+    .environmentObject(model)
+    .environmentObject(preferences)
+    .environmentObject(model.images)
+    .onExitCommand { model.handleSearchEscape() }
+    let hostingView = NSHostingView(rootView: root)
+    // AppModel owns minimum sizing; changing search content must not resize the panel.
+    hostingView.sizingOptions = []
+    contentView = hostingView
   }
 }
