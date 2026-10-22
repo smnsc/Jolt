@@ -11,7 +11,7 @@ Jolt is a native, read-only Jira Cloud issue searcher for macOS. It is a Swift P
 
 ## Build reporting (mandatory)
 
-- `Resources/Info.plist` is the source-controlled authority for version and build number. Increment `CFBundleVersion` when preparing a new app build for testing or distribution; rebuilding the same source preserves its number. `scripts/build-app.sh` prints it on its final line.
+- `Resources/Info.plist` is the source-controlled authority for version and build number. Increment `CFBundleVersion` when preparing a new app build for testing or distribution; rebuilding the same source preserves its number. `scripts/macos/build-app.sh` prints it on its final line.
 - After performing a new app build, always include the exact build number in the user-facing completion report so the user can confirm that the running app is current. Use the form **`Jolt build N`**. Do not report a build as complete without its number.
 - If the build script's final line is unavailable, read `CFBundleVersion` from `build/Jolt.app/Contents/Info.plist` and report that value.
 
@@ -37,5 +37,5 @@ Jolt is a native, read-only Jira Cloud issue searcher for macOS. It is a Swift P
 
 - Run `swift test` for core behavior changes.
 - Add or update parser/JQL tests when search semantics change.
-- For UI, Keychain, hot-key, login-item, signing, or sandbox changes, also run the app from Xcode or build it with `scripts/build-app.sh`; these paths are not covered by the core test suite. If you build the app, report its build number as required above.
+- For UI, Keychain, hot-key, login-item, signing, or sandbox changes, also run the app from Xcode or build it with `scripts/macos/build-app.sh`; these paths are not covered by the core test suite. If you build the app, report its build number as required above.
 - Do not commit generated `.build/`, `build/`, `.app`, `.dmg`, or user-specific Xcode files.

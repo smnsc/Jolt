@@ -6,7 +6,7 @@ import tempfile
 import unittest
 
 spec = importlib.util.spec_from_file_location(
-    'prepare_release', Path(__file__).with_name('prepare-release.py'))
+    'prepare_release', Path(__file__).resolve().parents[1] / 'release/prepare.py')
 release = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(release)
 

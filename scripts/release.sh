@@ -13,7 +13,7 @@ fi
 project_dir="$PWD"
 MARKETING_VERSION="$1"
 BUILD_NUMBER="$2"
-source scripts/version.sh
+source scripts/shared/version.sh
 command -v gh >/dev/null || { echo 'Install GitHub CLI, then run gh auth login.' >&2; exit 1; }
 if [[ -n "$(git status --porcelain)" ]]; then
   echo 'Commit and push your changes first; releases build the remote main branch.' >&2

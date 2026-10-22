@@ -10,7 +10,7 @@ import subprocess
 import sys
 import xml.etree.ElementTree as ET
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 APP = ROOT / 'build/Jolt.app'
 TOOLS = ROOT / 'build/SwiftPM/artifacts/sparkle/Sparkle/bin'
 ACCOUNT = 'co.simonsc.jolt'
@@ -67,7 +67,7 @@ def validate_generated_feed(feed, version, build, reset):
 
 def main():
     if len(sys.argv) != 2:
-        sys.exit('Usage: scripts/prepare-release.py RELEASE_NOTES.md')
+        sys.exit('Usage: scripts/release/prepare.py RELEASE_NOTES.md')
     notes = Path(sys.argv[1]).resolve()
     if not notes.is_file() or not notes.read_text().strip():
         sys.exit('Provide nonempty release notes.')
@@ -86,7 +86,7 @@ def main():
         sys.exit('Refusing to release an app using a test update feed.')
     key_file = os.environ.get('SPARKLE_PRIVATE_KEY_FILE')
     if key_file:
-        run('swift', ROOT / 'scripts/verify-sparkle-key.swift', key_file, info.get('SUPublicEDKey', ''))
+        run('swift', ROOT / 'scripts/release/verify-sparkle-key.swift', key_file, info.get('SUPublicEDKey', ''))
         signing_args = ['--ed-key-file', key_file]
     else:
         public_key = run(TOOLS / 'generate_keys', '--account', ACCOUNT, '-p', capture_output=True, text=True).stdout.strip()
@@ -104,7 +104,7 @@ def main():
         sys.exit(f'{output} already exists; keep published releases immutable. Use a new version or move an unpublished staging folder aside.')
     output.mkdir(parents=True)
     run('codesign', '--verify', '--deep', '--strict', APP)
-    run(ROOT / 'scripts/package-dmg.sh')
+    run(ROOT / 'scripts/release/package-dmg.sh')
     dmg = output / f'Jolt-{version}.dmg'
     shutil.copy2(ROOT / 'build/Jolt.dmg', dmg)
     archive = output / f'Jolt-{version}.zip'

@@ -45,7 +45,7 @@ Authentication and Jira calls are live integration paths; the automated suite do
 Build an ad-hoc signed universal app:
 
 ```sh
-scripts/build-app.sh
+scripts/macos/build-app.sh
 ```
 
 The result is `build/Jolt.app`. The script builds arm64 and x86_64, compiles the asset catalog, signs, and verifies the app.
@@ -66,7 +66,7 @@ checked against the committed plist, including direct GitHub workflow dispatches
 Optional signing settings remain available:
 
 ```sh
-SIGNING_IDENTITY="Developer ID Application: Example (TEAMID)" scripts/build-app.sh
+SIGNING_IDENTITY="Developer ID Application: Example (TEAMID)" scripts/macos/build-app.sh
 ```
 
 After any successful app build, include the reported **Jolt build N** in the
@@ -75,7 +75,7 @@ completion message.
 Package the existing app as `build/Jolt.dmg`:
 
 ```sh
-scripts/package-dmg.sh
+scripts/release/package-dmg.sh
 ```
 
 Packaging generates a compact Retina background with installation and first-launch
@@ -83,8 +83,8 @@ instructions below the Jolt and Applications icons. It mounts a temporary
 writable image and uses Finder to save the window size, background, and icon
 positions before compressing it. Run in a logged-in macOS session with Finder
 available; macOS may request permission for the terminal to control Finder.
-Layout lives in `scripts/configure-dmg.applescript`; artwork and wording live in
-`scripts/generate-dmg-background.swift`. Repackaging an unchanged app preserves
+Layout lives in `scripts/release/configure-dmg.applescript`; artwork and wording live in
+`scripts/release/generate-dmg-background.swift`. Repackaging an unchanged app preserves
 its build number. Open the final DMG to visually check the layout after changes.
 
 If `APPLE_ID`, `APPLE_TEAM_ID`, and `APPLE_APP_PASSWORD` are all present, the packaging script also submits the DMG for notarization and staples the result. Keep these values in the environment or a local ignored configuration, never in source control.
@@ -99,7 +99,7 @@ exceptions in `Resources/Jolt.entitlements`.
 
 The default identifier is `co.simonsc.jolt`. Builds remain ad-hoc signed unless a
 Developer ID identity is supplied. Sparkle archive/feed signatures use a separate,
-free Ed25519 key in the maintainer's Keychain. `scripts/prepare-release.py` prepares
+free Ed25519 key in the maintainer's Keychain. `scripts/release/prepare.py` prepares
 release assets and a matching Homebrew cask without publishing them.
 
 ## Icons and resources
@@ -107,8 +107,8 @@ release assets and a matching Homebrew cask without publishing them.
 - Modern app icon: `Resources/AppIcon.icon`; edit and save in Icon Composer.
 - Legacy app icon source artwork: `Resources/AppIcon.png`.
 - Menu-bar source artwork: `Resources/MenuBarIcon.png`.
-- Regenerate legacy icon sizes: `swift scripts/generate-app-icon.swift Resources/AppIcon.png Resources/Assets.xcassets/AppIcon.appiconset`.
-- `scripts/build-app.sh` regenerates these legacy sizes automatically from `Resources/AppIcon.png` before every build.
+- Regenerate legacy icon sizes: `swift scripts/macos/generate-app-icon.swift Resources/AppIcon.png Resources/Assets.xcassets/AppIcon.appiconset`.
+- `scripts/macos/build-app.sh` regenerates these legacy sizes automatically from `Resources/AppIcon.png` before every build.
 - Asset catalog: `Resources/Assets.xcassets`.
 - Bundle template: `Resources/Info.plist`.
 - Sandbox permissions: `Resources/Jolt.entitlements`.

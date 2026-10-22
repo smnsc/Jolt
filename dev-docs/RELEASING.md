@@ -71,7 +71,7 @@ Pages uses the committed feed to set both HTML download buttons to the matching 
 automatically before every website deployment, including HTML uploads to `main`.
 Keep `data-jolt-download` on each download anchor; attribute order and line wrapping
 are supported. Deployment fails if no marked links are found. To refresh a page
-locally before uploading, run `python3 scripts/update-download-links.py`.
+locally before uploading, run `python3 scripts/website/update-download-links.py`.
 Never edit the signed XML by hand. Keep previous app downloads.
 
 When migrating from the old workflow, preserve the latest release's signed feed in
@@ -104,14 +104,14 @@ Existing timestamp-numbered installations must download and install 0.1.2 manual
 Subsequent releases must increase both the app version and build number (for
 example, 0.1.3/build 117). Other decreases remain blocked.
 
-Run `python3 scripts/test-prepare-release.py` for offline checks of these rules.
+Run `python3 scripts/tests/test_prepare_release.py` for offline checks of these rules.
 The release and test workflows run these checks too.
 
 ## Prepare a release on your Mac (manual alternative)
 
 1. Run `scripts/test.sh` (selects Xcode and uses local build caches).
 2. Set and commit the new version and build number in `Resources/Info.plist`, then
-   run `scripts/build-app.sh`. The build number must exceed every published build.
+   run `scripts/macos/build-app.sh`. The build number must exceed every published build.
    Settings shows `MAJOR.MINOR.PATCH (build N)`. Rebuilds retain the tracked number.
    Record the exact **Jolt build N** printed by the script.
 3. Test the packaged app: launch, connection, search, preferences, login item,
@@ -120,7 +120,7 @@ The release and test workflows run these checks too.
 4. Write release notes, then run:
 
    ```sh
-   scripts/prepare-release.py dev-docs/releases/0.1.0.md
+   scripts/release/prepare.py dev-docs/releases/0.1.0.md
    ```
 
    This verifies the app and public key, prepares a drag-to-Applications DMG and

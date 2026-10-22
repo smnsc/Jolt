@@ -2,7 +2,7 @@
 set -euo pipefail
 
 script_dir="${0:A:h}"
-project_dir="${script_dir:h}"
+project_dir="${script_dir:h:h}"
 configuration="${CONFIGURATION:-release}"
 output_dir="${project_dir}/build"
 app_dir="${output_dir}/Jolt.app"
@@ -12,7 +12,7 @@ asset_info_path="${output_dir}/AppIconInfo.plist"
 scratch_path="${output_dir}/SwiftPM"
 module_cache_path="${output_dir}/ModuleCache"
 # Version identity is tracked with the source, never inferred from build output.
-source "${script_dir}/version.sh"
+source "${project_dir}/scripts/shared/version.sh"
 marketing_version="${jolt_version}"
 build_number="${jolt_build}"
 

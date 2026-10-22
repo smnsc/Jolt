@@ -6,7 +6,7 @@ import tempfile
 import unittest
 
 spec = importlib.util.spec_from_file_location(
-    'download_links', Path(__file__).with_name('update-download-links.py'))
+    'download_links', Path(__file__).resolve().parents[1] / 'website/update-download-links.py')
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
@@ -15,7 +15,7 @@ class DownloadLinksTests(unittest.TestCase):
     def test_uploaded_html_formats(self):
         with tempfile.TemporaryDirectory() as directory:
             site = Path(directory)
-            feed = (Path(__file__).resolve().parent.parent / 'docs/appcast.xml').read_bytes()
+            feed = (Path(__file__).resolve().parents[2] / 'docs/appcast.xml').read_bytes()
             (site / 'appcast.xml').write_bytes(feed)
             (site / 'index.html').write_text("""
 <a class="button" data-jolt-download
@@ -37,7 +37,7 @@ class DownloadLinksTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             site = Path(directory)
             (site / 'appcast.xml').write_bytes(
-                (Path(__file__).resolve().parent.parent / 'docs/appcast.xml').read_bytes())
+                (Path(__file__).resolve().parents[2] / 'docs/appcast.xml').read_bytes())
             original = '<a href="old.dmg">Download</a>'
             (site / 'index.html').write_text(original)
             with self.assertRaisesRegex(ValueError, 'No data-jolt-download'):

@@ -2,12 +2,12 @@
 set -euo pipefail
 
 script_dir="${0:A:h}"
-project_dir="${script_dir:h}"
+project_dir="${script_dir:h:h}"
 app_path="${project_dir}/build/Jolt.app"
 dmg_path="${project_dir}/build/Jolt.dmg"
 
 if [[ ! -d "${app_path}" ]]; then
-  print -u2 "Build the app first with scripts/build-app.sh."
+  print -u2 "Build the app first with scripts/macos/build-app.sh."
   exit 2
 fi
 

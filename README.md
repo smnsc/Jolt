@@ -135,7 +135,7 @@ Built with SwiftUI and AppKit. Open `Package.swift` in Xcode to explore the app.
 With **Xcode 26 or later** installed, run these commands from your checkout:
 
 ```sh
-scripts/build-app.sh
+scripts/macos/build-app.sh
 open build/Jolt.app
 ```
 
@@ -146,7 +146,7 @@ Before making a new numbered build, increment the build number:
 ```sh
 current_build=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" Resources/Info.plist)
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $((current_build + 1))" Resources/Info.plist
-scripts/build-app.sh
+scripts/macos/build-app.sh
 open build/Jolt.app
 ```
 

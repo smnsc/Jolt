@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['docs/**', 'scripts/update-download-links.py', 'scripts/test-update-download-links.py', '.github/workflows/pages.yml']
+    paths: ['docs/**', 'scripts/website/update-download-links.py', 'scripts/tests/test_update_download_links.py', '.github/workflows/pages.yml']
 permissions:
   contents: read
   pages: write
@@ -20,9 +20,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Test download link rewriting
-        run: python3 scripts/test-update-download-links.py
+        run: python3 scripts/tests/test_update_download_links.py
       - name: Set direct download links from the published feed
-        run: python3 scripts/update-download-links.py
+        run: python3 scripts/website/update-download-links.py
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

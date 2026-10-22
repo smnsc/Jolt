@@ -46,4 +46,4 @@ def update_links(site):
 
 
 if __name__ == '__main__':
-    update_links(Path(__file__).resolve().parent.parent / 'docs')
+    update_links(Path(__file__).resolve().parents[2] / 'docs')
