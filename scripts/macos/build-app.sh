@@ -57,7 +57,17 @@ xcrun actool "${project_dir}/Resources/Assets.xcassets" \
   --target-device mac \
   --development-region en >/dev/null
 
-/usr/libexec/PlistBuddy -c "Merge ${asset_info_path}" "${plist_path}"
+# Compiler metadata overrides template icon defaults instead of skipping duplicates.
+python3 - "${plist_path}" "${asset_info_path}" <<'PYTHON'
+from pathlib import Path
+import plistlib
+import sys
+
+plist_path, asset_path = map(Path, sys.argv[1:])
+info = plistlib.loads(plist_path.read_bytes())
+info.update(plistlib.loads(asset_path.read_bytes()))
+plist_path.write_bytes(plistlib.dumps(info, sort_keys=False))
+PYTHON
 
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier ${BUNDLE_IDENTIFIER:-co.simonsc.jolt}" "${plist_path}"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${marketing_version}" "${plist_path}"
