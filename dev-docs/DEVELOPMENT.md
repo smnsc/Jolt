@@ -11,13 +11,15 @@ No developer-owned Jira credentials belong in the repository. The app collects c
 
 ## Fast validation loop
 
-Run the core suite from the repository root:
+Run script checks and the core suite from the repository root:
 
 ```sh
 scripts/test.sh
 ```
 
-The script selects the installed Xcode toolchain when `DEVELOPER_DIR` is unset,
+Successful script checks buffer fixture output so simulated build versions never
+appear as real build results; failed checks include their captured output.
+The script first checks the build/release/website helpers, then selects the installed Xcode toolchain when `DEVELOPER_DIR` is unset,
 keeps generated caches and build products in ignored `build/`, and disables the
 nested SwiftPM sandbox for agent compatibility. Additional Swift test arguments
 are forwarded, for example `scripts/test.sh --filter SearchParserTests`.
@@ -40,15 +42,62 @@ Open `Package.swift` in Xcode and run the `Jolt` scheme for application behavior
 
 Authentication and Jira calls are live integration paths; the automated suite does not mock or exercise them today.
 
+## Script layout
+
+The top level contains the three everyday commands:
+
+| Command | Purpose |
+| --- | --- |
+| `scripts/build.py [X.Y.Z \| --build-only]` | Test and create a new numbered local build; prompt if no argument is given |
+| `scripts/test.sh [Swift test arguments]` | Run script checks and Swift tests |
+| `scripts/release.sh` | Request a release from committed remote main |
+
+Supporting scripts are grouped under `scripts/macos/` (app assembly and icons),
+`scripts/release/` (packaging and signing), `scripts/website/` (download links),
+`scripts/shared/` (version validation), and `scripts/tests/` (script checks).
+The build command is directly executable Python; no shell wrapper is needed.
+The macOS app builder remains separate so CI and retries can compile the tracked
+version/build without incrementing it or prompting.
+
 ## Direct-download build
 
-Build an ad-hoc signed universal app:
+For a new local test build, run:
+
+```sh
+scripts/build.py           # Prompt for a version; Enter keeps the current version
+scripts/build.py 0.1.5     # Supply a new version directly
+scripts/build.py --build-only  # Skip the version prompt; increment only the build number
+```
+
+The script runs `scripts/test.sh`, updates the tracked version/build number, and
+calls `scripts/macos/build-app.sh`. A supplied version must exceed the current version;
+its `dev-docs/releases/X.Y.Z.md` is created only if missing, using the release
+notes template and commit history. If notes for the selected version already exist,
+interactive builds ask whether to regenerate them from scratch, including when
+keeping the current version. Yes replaces the file with the template and current
+committed history, including new commits; manual edits are replaced. Enter, No,
+or end-of-input preserves the existing file. Without a terminal, existing notes
+are preserved and omitted version input means build only. Review notes before
+committing. Failed tests leave tracked files
+unchanged. If compilation fails, the new identity and notes are retained; retry
+with `scripts/macos/build-app.sh` to avoid incrementing again. No commit or publication
+is performed.
+
+To rebuild the same numbered source directly:
 
 ```sh
 scripts/macos/build-app.sh
 ```
 
 The result is `build/Jolt.app`. The script builds arm64 and x86_64, compiles the asset catalog, signs, and verifies the app.
+Run `python3 scripts/tests/test_build.py` for offline local-workflow checks.
+
+Xcode with the macOS 27 SDK may warn that Intel is deprecated for a macOS 27
+deployment target during a universal build. The built executable was checked with
+`vtool -show-build`: both slices still declare macOS 14.0, matching the package and
+app plist. Keep Intel support; this warning alone does not indicate a failed build.
+Swift test output also includes an XCTest summary of zero tests before the actual
+Swift Testing results; use the final Swift Testing count.
 
 `Resources/Info.plist` is the source-controlled authority for both
 `CFBundleShortVersionString` (MAJOR.MINOR.PATCH) and `CFBundleVersion` (a positive
@@ -60,8 +109,11 @@ The old `build/.build-number` is no longer read or written.
 
 Every published release must increase both the version and build number. Never
 reuse a published version. `MARKETING_VERSION` and `BUILD_NUMBER`, if supplied,
-must match the tracked values; they cannot override them. Release requests are
-checked against the committed plist, including direct GitHub workflow dispatches.
+must match the tracked values; they cannot override them. The release command and direct GitHub workflow dispatches both read the version
+and build number from the committed remote `main` plist; no release arguments are
+needed. The release command asks for confirmation if files are staged, unstaged,
+or untracked, or if the current branch has unpushed commits or differs from remote
+`main`. Continuing releases remote `main`; Enter or missing input cancels.
 
 Optional signing settings remain available:
 
@@ -100,7 +152,11 @@ exceptions in `Resources/Jolt.entitlements`.
 The default identifier is `co.simonsc.jolt`. Builds remain ad-hoc signed unless a
 Developer ID identity is supplied. Sparkle archive/feed signatures use a separate,
 free Ed25519 key in the maintainer's Keychain. `scripts/release/prepare.py` prepares
-release assets and a matching Homebrew cask without publishing them.
+release assets and a matching Homebrew cask without publishing them. It generates
+release notes from commit history when no versioned notes file exists; otherwise
+it uses the notes created by `scripts/build.py`. Supply an optional notes file
+to use custom text from another path. Local app builds do
+not require release notes.
 
 ## Icons and resources
 

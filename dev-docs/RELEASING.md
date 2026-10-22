@@ -32,20 +32,27 @@ users to manually install a new build. Export/import options are documented by
 
 ## Automated release (recommended)
 
-1. Add reviewed notes to `dev-docs/releases/VERSION.md`. Set `CFBundleShortVersionString`
-   and `CFBundleVersion` in `Resources/Info.plist` to the release version and a build
-   number greater than every published build.
-2. Commit and push to `main`, then run from a clean checkout matching remote main:
+1. Run `scripts/build.py X.Y.Z` with the intended new version. This tests and builds
+   the app, updates `Resources/Info.plist`, and creates release notes if missing.
+   Review `dev-docs/releases/X.Y.Z.md`. The build must exceed every published build.
+2. Commit and push to `main`, then run:
 
    ```sh
-   scripts/release.sh 0.1.2 116
+   scripts/release.sh
    ```
 
-   Supply a new `MAJOR.MINOR.PATCH` version greater than the latest release and its
-   explicit positive-integer build number. Both must match the committed
-   `Resources/Info.plist`; inputs cannot override it.
+   The command fetches remote `main` and reads its committed `Resources/Info.plist`;
+   no arguments are needed. GitHub independently reads the source it builds.
+   Staged, unstaged, or untracked files, unpushed commits on the current branch,
+   or a branch ahead of/behind remote `main` trigger a warning and confirmation.
+   Enter, No, or missing input cancels. Yes continues with **remote main**;
+   local changes are excluded. The warning displays the remote version/build so
+   you can see exactly what you are requesting. A clean matching checkout proceeds
+   without a prompt. Fetch or metadata errors stop the command.
+   The version must exceed the latest release and the build must exceed previous
+   published builds (apart from the documented historical reset).
    This publishes a public release. Alternatively, use **Actions → Release → Run
-   workflow**, select `main`, and enter the version and build number.
+   workflow** and select `main`; there are no version/build fields to enter.
 3. Follow **Actions → Release**, approve the environment if you configured required
    reviewers, then follow **Deploy website**. Terminal status commands:
 
@@ -61,6 +68,19 @@ downloads and checks the assets, then publishes the release and dispatches Pages
 The run summary records **Jolt build N**. An existing tag or release is never
 replaced. The private-key file is removed even on failure. Signing tools have ten-minute
 timeouts, the packaging step has a fifteen-minute limit, and the job has a thirty-minute limit. Release artifacts contain no private key.
+
+Release preparation uses `dev-docs/releases/VERSION.md` when present, preserving
+your reviewed edits. If absent, notes are generated from commit subjects since
+the previous release tag identified by `docs/appcast.xml` (all commits for the first
+release). The workflow fetches full history and tags. The same notes appear on the
+GitHub Release and in Sparkle, and are saved as `RELEASE_NOTES.md` in the recovery
+artifact. You do not need to create a notes file manually: `scripts/build.py`
+creates it for a new version. On subsequent interactive builds, it offers to
+regenerate existing notes from scratch using current committed history. Enter
+keeps the notes; Yes replaces any manual edits. Write clear commit subjects because they seed the
+release notes. Generated entries omit commit hashes and leave ordinary punctuation
+unchanged; Markdown formatting characters and HTML markup are escaped to keep
+subjects literal. An existing empty notes file is rejected.
 
 Only the DMG and update ZIP are attached to public releases. Checksums and the
 optional Homebrew cask stay in the recovery artifact. After verifying and publishing
@@ -104,29 +124,37 @@ Existing timestamp-numbered installations must download and install 0.1.2 manual
 Subsequent releases must increase both the app version and build number (for
 example, 0.1.3/build 117). Other decreases remain blocked.
 
-Run `python3 scripts/tests/test_prepare_release.py` for offline checks of these rules.
+Run `python3 scripts/tests/test_prepare_release.py` for offline checks of these rules
+and automatic notes generation.
 The release and test workflows run these checks too.
 
 ## Prepare a release on your Mac (manual alternative)
 
 1. Run `scripts/test.sh` (selects Xcode and uses local build caches).
-2. Set and commit the new version and build number in `Resources/Info.plist`, then
-   run `scripts/macos/build-app.sh`. The build number must exceed every published build.
+2. Run `scripts/build.py X.Y.Z`, review the generated notes, and commit the plist,
+   notes, and source changes. The build number must exceed every published build.
    Settings shows `MAJOR.MINOR.PATCH (build N)`. Rebuilds retain the tracked number.
    Record the exact **Jolt build N** printed by the script.
 3. Test the packaged app: launch, connection, search, preferences, login item,
    donation link, update settings, and Check for Updates. Test macOS 14 and Intel
    on suitable hardware before claiming those configurations verified.
-4. Write release notes, then run:
+4. Generate release notes and prepare the release:
 
    ```sh
-   scripts/release/prepare.py dev-docs/releases/0.1.0.md
+   scripts/release/prepare.py
    ```
 
    This verifies the app and public key, prepares a drag-to-Applications DMG and
    ZIP, signs the update archive and feed through Keychain, verifies the feed,
    and writes SHA256 checksums plus a Homebrew cask. Outputs are in ignored
    `build/releases/v0.1.0/`. Existing release folders are never overwritten.
+   Existing versioned notes are used; otherwise notes are generated from committed
+   history, so commit all release changes first.
+   Use a full checkout with tags (`git fetch --tags`; for shallow checkouts, also
+   `git fetch --unshallow`). A missing or unrelated previous release tag stops
+   generation rather than using the wrong history. To supply reviewed custom notes
+   instead, run `scripts/release/prepare.py /path/to/notes.md`; the file can be
+   anywhere and does not need a version-based name.
 
 The app's update configuration is production-only by default. For local updater
 QA, build with `UPDATE_FEED_URL` pointing at a controlled test feed. The release

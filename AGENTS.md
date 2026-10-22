@@ -21,7 +21,7 @@ Jolt is a native, read-only Jira Cloud issue searcher for macOS. It is a Swift P
 - `Sources/JoltApp/`: app lifecycle, SwiftUI/AppKit UI, state coordination, Jira networking, authentication, preferences, and caches.
 - `Tests/JoltCoreTests/`: parser and JQL behavior tests using Swift Testing.
 - `Resources/`: app metadata, entitlements, and icon assets.
-- `scripts/`: direct-download app build, icon generation, and DMG packaging.
+- `scripts/`: top-level `build.py`, `test.sh`, and `release.sh` commands; supporting tools live in `macos/`, `release/`, `website/`, `shared/`, and `tests/`.
 
 ## Working rules
 
@@ -38,4 +38,7 @@ Jolt is a native, read-only Jira Cloud issue searcher for macOS. It is a Swift P
 - Run `swift test` for core behavior changes.
 - Add or update parser/JQL tests when search semantics change.
 - For UI, Keychain, hot-key, login-item, signing, or sandbox changes, also run the app from Xcode or build it with `scripts/macos/build-app.sh`; these paths are not covered by the core test suite. If you build the app, report its build number as required above.
+- Use `scripts/build.py [X.Y.Z | --build-only]` for a tested new numbered local build. It prompts when no argument is supplied, increments the tracked build number, and creates missing versioned release notes for a supplied new version. If notes already exist, interactive builds offer to regenerate them from scratch; default to preserving them and replace manual edits only after explicit confirmation. `scripts/macos/build-app.sh` rebuilds the same identity.
+- `scripts/release.sh` takes no arguments; both it and the GitHub Release workflow read version/build from remote `main`’s committed `Resources/Info.plist`. Warn and confirm for dirty files, unpushed commits, or HEAD differing from remote `main`; confirmation must explain that local changes are excluded.
+- Release preparation uses existing `dev-docs/releases/X.Y.Z.md` notes or generates them from commit history if absent. Do not require manually creating the file; preserve reviewed notes. An optional notes-file argument supports custom local notes.
 - Do not commit generated `.build/`, `build/`, `.app`, `.dmg`, or user-specific Xcode files.
