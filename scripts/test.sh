@@ -9,8 +9,11 @@ if [[ -z "${DEVELOPER_DIR:-}" && -d "/Applications/Xcode.app/Contents/Developer"
 fi
 
 cd "${project_dir}"
+print 'Checking build, release, and website scripts…'
+python3 -m unittest discover -b -s scripts/tests -p 'test_*.py'
 module_cache_path="${project_dir}/build/TestModuleCache"
 mkdir -p "${module_cache_path}"
 export SWIFTPM_MODULECACHE_OVERRIDE="${module_cache_path}"
 export CLANG_MODULE_CACHE_PATH="${module_cache_path}"
+print 'Running Swift tests…'
 swift test --disable-sandbox --scratch-path "${project_dir}/build/TestSwiftPM" "$@"
