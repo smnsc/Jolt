@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Offline regression checks for the one-time release numbering reset."""
+"""Offline regression checks for release numbering and automatic release notes."""
 import importlib.util
 from pathlib import Path
 import tempfile
+import subprocess
 import unittest
 
 spec = importlib.util.spec_from_file_location(
@@ -75,5 +76,79 @@ class ReleaseNumberingTests(unittest.TestCase):
                 release.requires_feed_reset(self.feed, '0.1.2', '116')
 
 
+class ReleaseNotesTests(unittest.TestCase):
+    write_feed = ReleaseNumberingTests.write_feed
+
+    def setUp(self):
+        ReleaseNumberingTests.setUp(self)
+        self.repository = Path(self.directory.name) / 'repository'
+        self.repository.mkdir()
+        self.git('init', '--quiet')
+        self.git('config', 'user.name', 'Release Test')
+        self.git('config', 'user.email', 'release-test@example.invalid')
+        self.commit('Initial app')
+
+    def git(self, *args):
+        return subprocess.run(['git', '-C', str(self.repository), *args],
+                              check=True, capture_output=True, text=True)
+
+    def commit(self, subject):
+        self.git('commit', '--quiet', '--allow-empty', '-m', subject)
+
+    def notes(self):
+        return release.generate_release_notes('0.2.0', '200', self.feed, self.repository)
+
+    def test_notes_start_after_previous_feed_release(self):
+        self.git('tag', 'v0.1.4')
+        self.write_feed([('0.1.3', 120), ('0.1.4', 121)])
+        self.commit('Improve search')
+        # An unrelated newer tag must not change the feed boundary.
+        self.git('tag', 'v0.1.5')
+        self.commit('Fix window focus')
+        notes = self.notes()
+        self.assertNotIn('Initial app', notes)
+        self.assertLess(notes.index('Improve search'), notes.index('Fix window focus'))
+        self.assertIn('Jolt build 200', notes)
+        self.assertIn('not Apple-notarized', notes)
+
+    def test_first_release_uses_all_history(self):
+        self.assertIn('## Changes\n\n- Initial app\n\n', self.notes())
+
+    def test_missing_tag_is_actionable(self):
+        self.write_feed([('0.1.4', 121)])
+        with self.assertRaisesRegex(ValueError, 'Fetch release tags'):
+            self.notes()
+
+    def test_unrelated_tag_is_rejected(self):
+        original = self.git('rev-parse', 'HEAD').stdout.strip()
+        self.git('checkout', '--orphan', 'other')
+        self.commit('Other history')
+        self.git('tag', 'v0.1.4')
+        self.git('checkout', '--detach', original)
+        self.write_feed([('0.1.4', 121)])
+        with self.assertRaisesRegex(ValueError, 'HEAD history'):
+            self.notes()
+
+    def test_empty_range_has_nonempty_notes(self):
+        self.git('tag', 'v0.1.4')
+        self.write_feed([('0.1.4', 121)])
+        self.assertIn('No source commits', self.notes())
+
+    def test_shallow_checkout_is_rejected(self):
+        clone = Path(self.directory.name) / 'shallow'
+        subprocess.run(['git', 'clone', '--quiet', '--depth=1',
+                        self.repository.as_uri(), str(clone)], check=True)
+        with self.assertRaisesRegex(ValueError, 'full history'):
+            release.generate_release_notes('0.2.0', '200', self.feed, clone)
+
+    def test_subject_markup_is_literal(self):
+        self.commit('Fix <script> and [links](url) with *stars* in full-screen 0.1.5 (test) #123!')
+        notes = self.notes()
+        self.assertNotIn('<script>', notes)
+        self.assertIn(r'\[links\](url)', notes)
+        self.assertIn(r'\*stars\*', notes)
+        self.assertIn('full-screen 0.1.5 (test) #123!', notes)
+
+
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(buffer=True)

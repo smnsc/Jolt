@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Prepare a reviewed, locally signed release; never publishes or exports keys."""
 import hashlib
+import html
 import os
 from pathlib import Path
 import plistlib
@@ -65,12 +66,57 @@ def validate_generated_feed(feed, version, build, reset):
         raise ValueError('Reset feed must contain only the new release.')
 
 
+def generate_release_notes(version, build, feed, repository=ROOT):
+    """Use the previous signed feed's version as the commit-history boundary."""
+    def git(*args):
+        return subprocess.run(
+            ['git', '-C', str(repository), *args], check=True,
+            capture_output=True, text=True, timeout=60).stdout.strip()
+
+    if git('rev-parse', '--is-shallow-repository') == 'true':
+        raise ValueError('Automatic release notes require full history. Run git fetch --unshallow --tags.')
+    revision = 'HEAD'
+    if feed.exists():
+        previous = '.'.join(map(str, max(v for v, _ in feed_versions(feed))))
+        tag = f'refs/tags/v{previous}'
+        try:
+            git('rev-parse', '--verify', f'{tag}^{{commit}}')
+            git('merge-base', '--is-ancestor', tag, 'HEAD')
+        except subprocess.CalledProcessError as error:
+            raise ValueError(f'Previous release tag v{previous} must exist in HEAD history. '
+                             'Fetch release tags or supply custom release notes.') from error
+        revision = f'{tag}..HEAD'
+    commits = git('log', '--reverse', '--format=%s', revision).splitlines()
+    # Keep commit subjects literal when Markdown is rendered by GitHub or Sparkle.
+    changes = '\n'.join('- ' + re.sub(r'([\\`*_\[\]])', r'\\\1', html.escape(subject, quote=False))
+                        for subject in commits)
+    if not changes:
+        changes = '- No source commits since the previous release.'
+    return f"""# Jolt {version}
+
+Jolt build {build}.
+
+## Changes
+
+{changes}
+
+Requires macOS 14 or later. Universal build for Apple Silicon and Intel.
+
+Jolt is not Apple-notarized. If macOS blocks the app, attempt to open it, then use
+System Settings → Privacy & Security → Open Anyway. Move Jolt to Applications
+before running it or using the updater. You may need to reconnect Jira after updating.
+"""
+
+
 def main():
-    if len(sys.argv) != 2:
-        sys.exit('Usage: scripts/release/prepare.py RELEASE_NOTES.md')
-    notes = Path(sys.argv[1]).resolve()
-    if not notes.is_file() or not notes.read_text().strip():
-        sys.exit('Provide nonempty release notes.')
+    if len(sys.argv) > 2:
+        sys.exit('Usage: scripts/release/prepare.py [RELEASE_NOTES.md]')
+    notes_text = None
+    if len(sys.argv) == 2:
+        notes = Path(sys.argv[1]).resolve()
+        if not notes.is_file() or not notes.read_text().strip():
+            sys.exit('Provide nonempty release notes.')
+        notes_text = notes.read_text()
     with (APP / 'Contents/Info.plist').open('rb') as f:
         info = plistlib.load(f)
     version, build = info['CFBundleShortVersionString'], info['CFBundleVersion']
@@ -97,6 +143,14 @@ def main():
     if feed.exists():
         run(TOOLS / 'sign_update', *signing_args, '--verify', feed)
     reset_feed = requires_feed_reset(feed, version, build)
+    if notes_text is None:
+        saved_notes = ROOT / 'dev-docs/releases' / f'{version}.md'
+        if saved_notes.exists():
+            notes_text = saved_notes.read_text()
+            if not notes_text.strip():
+                sys.exit(f'Release notes are empty: {saved_notes}')
+        else:
+            notes_text = generate_release_notes(version, build, feed)
     if reset_feed:
         print('Resetting update numbering for 0.1.2/build 116; existing timestamp builds require manual installation.')
     output = ROOT / 'build/releases' / f'v{version}'
@@ -113,7 +167,7 @@ def main():
     updates = output / 'updates'
     updates.mkdir()
     shutil.move(archive, updates / archive.name)
-    shutil.copy2(notes, updates / f'Jolt-{version}.md')
+    (updates / f'Jolt-{version}.md').write_text(notes_text)
     # Start a fresh feed for the reset; never modify the previous signed XML.
     if feed.exists() and not reset_feed:
         shutil.copy2(feed, updates / 'appcast.xml')
@@ -124,7 +178,7 @@ def main():
     validate_generated_feed(updates / 'appcast.xml', version, build, reset_feed)
     shutil.move(updates / archive.name, archive)
     shutil.copy2(updates / 'appcast.xml', output / 'appcast.xml')
-    shutil.copy2(notes, output / 'RELEASE_NOTES.md')
+    (output / 'RELEASE_NOTES.md').write_text(notes_text)
     checksums = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in [dmg, archive]}
     (output / 'SHA256SUMS').write_text(''.join(f'{digest}  {name}\n' for name, digest in checksums.items()))
     cask = f'''cask "jolt" do
