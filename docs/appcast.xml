@@ -6,6 +6,29 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <channel>
         <title>Jolt</title>
         <item>
+            <title>0.1.5</title>
+            <pubDate>Thu, 22 Oct 2026 14:37:20 +0000</pubDate>
+            <link>https://smnsc.github.io/Jolt/</link>
+            <sparkle:version>130</sparkle:version>
+            <sparkle:shortVersionString>0.1.5</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description sparkle:format="markdown"><![CDATA[# Jolt 0.1.5
+
+Jolt build 130.
+
+## Changes
+
+- Fix search presentation across full-screen Spaces and Dock activation
+
+Requires macOS 14 or later. Universal build for Apple Silicon and Intel.
+
+Jolt is not Apple-notarized. If macOS blocks the app, attempt to open it, then use
+System Settings → Privacy & Security → Open Anyway. Move Jolt to Applications
+before running it or using the updater. You may need to reconnect Jira after updating.
+]]></description>
+            <enclosure url="https://github.com/smnsc/Jolt/releases/download/v0.1.5/Jolt-0.1.5.zip" length="4632950" type="application/octet-stream" sparkle:edSignature="hSjua5kUD+d842pENbyxKhiV734FLXh//B+Pcf5g++halG4GUfbWr2gM47pmpiABADR00rNyuKOiFNWSoIJ0DQ=="/>
+        </item>
+        <item>
             <title>0.1.4</title>
             <pubDate>Mon, 12 Oct 2026 15:19:47 +0000</pubDate>
             <link>https://smnsc.github.io/Jolt/</link>
@@ -46,44 +69,9 @@ before running it or using the updater. You may need to reconnect Jira after upd
 ]]></description>
             <enclosure url="https://github.com/smnsc/Jolt/releases/download/v0.1.3/Jolt-0.1.3.zip" length="4637094" type="application/octet-stream" sparkle:edSignature="5Vm2ieDkYT0dzr8v2ctfZK9w2e07aIU4SLbTLIKBGMGGe9IoszNIQnY5tJ6x/mF6r/6ubitDdP6mCTAw0aAHAw=="/>
         </item>
-        <item>
-            <title>0.1.2</title>
-            <pubDate>Fri, 09 Oct 2026 13:46:39 +0000</pubDate>
-            <link>https://smnsc.github.io/Jolt/</link>
-            <sparkle:version>116</sparkle:version>
-            <sparkle:shortVersionString>0.1.2</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description sparkle:format="markdown"><![CDATA[# Jolt 0.1.2
-
-This release improves update preferences and fixes website download links.
-
-- Choose when to check for updates: On Launch, Daily, Monthly (every 30 days), or Never. Daily remains the default, and manual checks are always available.
-- Automatic download and installation are disabled, including previously enabled preferences. Updates require your confirmation.
-- Website download buttons refresh from the release feed before deployment, even when uploaded HTML wraps or reorders their attributes.
-- Build numbering returns to short, sequential numbers, starting with build 116.
-
-## One-time manual installation
-
-Existing installations with timestamp build numbers, such as 1791449100, cannot
-automatically update to build 116. Download Jolt 0.1.2 from
-[the website](https://smnsc.github.io/Jolt/), quit Jolt, open the DMG, and replace
-Jolt in Applications. Launch the replacement app and confirm Settings shows
-version 0.1.2+build.116.
-
-After this one-time installation, future updates can be offered normally according
-to your chosen update-check frequency. You may need to reconnect Jira.
-
-Requires macOS 14 or later. Universal build for Apple Silicon and Intel.
-
-Jolt is not Apple-notarized. If macOS blocks the app, attempt to open it, then use
-System Settings → Privacy & Security → Open Anyway. Move Jolt to Applications
-before running it or using the updater.
-]]></description>
-            <enclosure url="https://github.com/smnsc/Jolt/releases/download/v0.1.2/Jolt-0.1.2.zip" length="4637111" type="application/octet-stream" sparkle:edSignature="Lx2sUAV3VVkoWu2EadF7ww/M2MjCrnZhvRt4siAaqXZpW3QExBehyBIhtvdOT7n0aNoVcKeSmvcBmbEBLJSWAQ=="/>
-        </item>
     </channel>
 </rss>
 <!-- sparkle-signatures:
-edSignature: NslIgtXv9seaqItwhSfpTkUVhtTFwPRkgmMPH1tHtFsw241csFrrgtYSx+gf9/Nra/6cq1vvGRECBlhNaov4Dw==
-length: 5277
+edSignature: vBLm5pEwfFyI6i4p9Asas/VzDMyNkg5tfHdZyMGI3/jAOFu8WsLGptBvulR7bZQu8bnOqMQGyWezNFHL94QMCQ==
+length: 4334
 -->
